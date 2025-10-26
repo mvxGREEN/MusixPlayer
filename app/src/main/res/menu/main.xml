@@ -3,17 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/action_upgrade"
-        android:orderInCategory="1"
-        android:title="@string/title_menu_pro"
-        android:icon="@drawable/ic_ad_free"
-        app:showAsAction="ifRoom"
-        android:onClick="onUpgradeClick" />
-    <item
         android:id="@+id/action_help"
         android:orderInCategory="2"
         android:title="@string/title_menu_help"
-        android:icon="@drawable/ic_help_outline"
+        android:icon="@drawable/help_24px"
         app:showAsAction="ifRoom"
         android:onClick="onHelpClick" />
     <item
