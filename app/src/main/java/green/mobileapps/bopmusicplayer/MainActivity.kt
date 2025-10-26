@@ -15,8 +15,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
-import com.example.simplemusicplayer.databinding.ActivityMainBinding
-import com.example.simplemusicplayer.databinding.ItemMusicFileBinding
+import green.mobileapps.bopmusicplayer.databinding.MainActivityBinding
+import green.mobileapps.bopmusicplayer.databinding.RecyclerItemFileBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -37,7 +37,7 @@ data class AudioFile(
 class MusicAdapter(private val context: Context, private var musicList: List<AudioFile>) :
     RecyclerView.Adapter<MusicAdapter.MusicViewHolder>() {
 
-    inner class MusicViewHolder(private val binding: ItemMusicFileBinding) :
+    inner class MusicViewHolder(private val binding: RecyclerItemFileBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(file: AudioFile) {
@@ -55,7 +55,7 @@ class MusicAdapter(private val context: Context, private var musicList: List<Aud
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MusicViewHolder {
-        val binding = ItemMusicFileBinding.inflate(
+        val binding = RecyclerItemFileBinding.inflate(
             LayoutInflater.from(parent.context),
             parent,
             false
@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.Main + job
 
-    private lateinit var binding: ActivityMainBinding
+    private lateinit var binding: MainActivityBinding
     private lateinit var musicAdapter: MusicAdapter
 
     // Determine the correct permission based on Android version
@@ -108,7 +108,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
+        binding = MainActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         setupRecyclerView()

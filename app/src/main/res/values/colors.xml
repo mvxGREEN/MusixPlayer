@@ -17,6 +17,15 @@
     <color name="mvxPink">#FF9999</color>
     <color name="mvxPinkShadowLight">#D3FFADAD</color>
 
+    // Shadows
+    <color name="shadowInvisible">#00FFFFFF</color>
+    <color name="shadow">#69000000</color>
+    <color name="shadowDark">#83000000</color>
+    <color name="shadowDarker">#A9000000</color>
+    <color name="shadowInverseLight">#43ffffff</color>
+    <color name="shadowInverse">#93ffffff</color>
+    <color name="shadowInverseDark">#C4ffffff</color>
+
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>

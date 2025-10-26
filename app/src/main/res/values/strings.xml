@@ -1,3 +1,20 @@
 <resources>
     <string name="app_name">3MP Music Player</string>
+
+    // menu items
+    <string name="title_menu_rate">Rate</string>
+    <string name="title_menu_pp">Privacy Policy</string>
+    <string name="title_menu_about">About</string>
+    <string name="title_menu_help">Help</string>
+    <string name="title_menu_pro">Pro Version</string>
+    <string name="title_privacy_settings">Privacy Settings</string>
+
+    <string name="msg_rate_button1">Rate!</string>
+    <string name="msg_rate_button2">Nah</string>
+    <string name="ad_btn_positive">Show Me</string>
+    <string name="ad_btn_negative">No</string>
+    <string name="msg_rate_dialog_title">RATE :)</string>
+    <string name="msg_rate_dialog_body"><![CDATA[
+        Enjoying the app?\nLet me know!\n\n-MaxGreen
+    ]]></string>
 </resources>
