@@ -12,11 +12,11 @@
         android:id="@+id/toolbar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/design_default_color_primary"
+        android:background="@color/primary"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:title="Simple Music Player"
+        app:title="3MP Music Player"
         app:titleTextColor="@android:color/white"
         android:elevation="4dp"/>
 

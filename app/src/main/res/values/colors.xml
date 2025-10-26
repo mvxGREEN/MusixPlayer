@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="colorPrimary">@color/greenGma</color>
+    <color name="colorPrimaryDark">@color/black</color>
+    <color name="colorAccent">@color/mvxPink</color>
+
+    <color name="greenGma">#1F6427</color>
+    <color name="mvxPink">#FF9999</color>
+    <color name="mvxPinkShadowLight">#D3FFADAD</color>
+
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
