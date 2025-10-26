@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">3MP Music Player</string>
+    <string name="app_name">Music</string>
 
     // menu items
     <string name="title_menu_rate">Rate</string>
