@@ -20,7 +20,7 @@
         app:titleTextColor="@android:color/white"
         android:elevation="4dp"/>
 
-        <!-- RecyclerView for the list of songs -->
+    <!-- RecyclerView for the list of songs -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view_music"
         android:layout_width="0dp"
@@ -34,25 +34,24 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:listitem="@layout/recycler_item_file"/>
 
-        <!-- Message/Status TextView (Hidden by default) -->
+    <!-- Message/Status TextView (Hidden by default) -->
     <TextView
-    android:id="@+id/text_status"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="Scanning for audio files..."
-    android:textColor="@color/design_default_color_primary_dark"
-    android:textSize="18sp"
-    android:visibility="gone"
-    app:layout_constraintTop_toTopOf="parent"
-    app:layout_constraintBottom_toBottomOf="parent"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:drawableTopCompat="@drawable/ic_music_note_24"
-    android:drawablePadding="16dp"/>
+        android:id="@+id/text_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Scanning for audio files..."
+        android:textColor="@color/design_default_color_primary_dark"
+        android:textSize="18sp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:drawableTopCompat="@drawable/music_note_24px"
+        android:drawablePadding="16dp"/>
 
-        <!-- Define the layout for a single item in the RecyclerView -->
     <include
-    layout="@layout/item_music_file"
-    android:visibility="gone"/>
+        layout="@layout/recycler_item_file"
+        android:visibility="gone"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
