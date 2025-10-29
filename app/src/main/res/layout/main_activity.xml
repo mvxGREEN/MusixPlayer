@@ -7,39 +7,16 @@
     android:background="@color/naturalLight"
     tools:context=".MainActivity">
 
-    <!-- APP BAR -->
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appbar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent"
-        android:theme="@style/AppTheme.AppBarOverlay"
-        android:background="@null">
-
-        <!-- TOOLBAR -->
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="@dimen/height_toolbar"
-            app:buttonGravity="center_vertical"
-            app:maxButtonHeight="56dp"
-            android:paddingHorizontal="@dimen/spacing_small"
-            app:menu="@menu/main"
-            app:popupTheme="@style/AppTheme.NoActionBar"
-            android:background="@null"
-            app:titleTextColor="@color/shadowInvisible"/>
-
-    </com.google.android.material.appbar.AppBarLayout>
-
     <!-- RecyclerView for the list of songs -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view_music"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginTop="64dp"
         android:padding="8dp"
         android:clipToPadding="false"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintTop_toBottomOf="@id/appbar"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
