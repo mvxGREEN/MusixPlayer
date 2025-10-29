@@ -58,4 +58,20 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // basic media3 modules
+    implementation("androidx.media3:media3-exoplayer:1.8.0")
+    implementation("androidx.media3:media3-ui:1.8.0")
+
+    // dash playback
+    implementation("androidx.media3:media3-exoplayer-dash:1.8.0")
+
+    // hls playback
+    implementation("androidx.media3:media3-exoplayer-hls:1.8.0")
+
+    // session management
+    implementation("androidx.media3:media3-session:1.8.0")
+
+    // kotlin coroutines integration with ListenableFuture
+    implementation("androidx.concurrent:concurrent-futures-ktx:1.3.0") // Or kotlin-coroutines-guava
 }

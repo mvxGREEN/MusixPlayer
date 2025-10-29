@@ -35,6 +35,14 @@
                 <data android:mimeType="text/plain"/>
             </intent-filter>
         </activity>
+
+        <!-- Declare the new Music Service -->
+        <service
+            android:name=".MusicService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
@@ -44,6 +52,7 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/provider_paths"/>
         </provider>
+
     </application>
 
 </manifest>

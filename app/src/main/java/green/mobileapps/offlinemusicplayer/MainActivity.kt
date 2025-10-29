@@ -114,12 +114,6 @@ class MusicAdapter(private val context: Context, private var musicList: List<Aud
             val albumInfo = if (file.album != null) " • ${file.album}" else ""
             binding.textArtist.text = "${file.artist}$albumInfo"
 
-            // show audio icon
-            binding.iconMusic.setImageResource(R.drawable.music_note_24px)
-            binding.iconMusic.setColorFilter(
-                ContextCompat.getColor(context, com.google.android.material.R.color.design_default_color_primary)
-            )
-
             binding.root.setOnClickListener {
                 // TODO start playback service
                 println("Playing: ${file.title} | Album: ${file.album} | Size: ${file.size} bytes")
