@@ -17,4 +17,5 @@
     <string name="msg_rate_dialog_body"><![CDATA[
         Enjoying the app?\nLet me know!\n\n-MaxGreen
     ]]></string>
+    <string name="msg_scanning_files">Scanning for audio files…</string>
 </resources>
