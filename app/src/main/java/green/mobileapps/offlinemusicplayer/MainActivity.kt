@@ -60,7 +60,6 @@ data class AudioFile(
     val title: String,
     val artist: String,
     val duration: Long,
-    val albumArt: ByteArray?,
 
     // Media Store Metadata
     val album: String?,
@@ -115,28 +114,14 @@ class MusicAdapter(private val context: Context, private var musicList: List<Aud
             val albumInfo = if (file.album != null) " • ${file.album}" else ""
             binding.textArtist.text = "${file.artist}$albumInfo"
 
-            // show image
+            // show audio icon
             binding.iconMusic.setImageResource(R.drawable.music_note_24px)
             binding.iconMusic.setColorFilter(
                 ContextCompat.getColor(context, com.google.android.material.R.color.design_default_color_primary)
             )
 
-            /* Logic to display album art or fallback icon
-            if (file.albumArt != null) {
-                val bitmap = BitmapFactory.decodeByteArray(file.albumArt, 0, file.albumArt.size)
-                binding.iconMusic.setImageBitmap(bitmap)
-                binding.iconMusic.clearColorFilter()
-            } else {
-                binding.iconMusic.setImageResource(R.drawable.music_note_24px)
-                binding.iconMusic.setColorFilter(
-                    ContextCompat.getColor(context, com.google.android.material.R.color.design_default_color_primary)
-                )
-            }
-            */
-
-            // Example click listener (where playback logic would go)
             binding.root.setOnClickListener {
-                // In a real app, you would start a service or play the music here.
+                // TODO start playback service
                 println("Playing: ${file.title} | Album: ${file.album} | Size: ${file.size} bytes")
             }
         }
@@ -294,18 +279,6 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                     id.toString()
                 )
 
-                // --- MediaMetadataRetriever for Album Art ---
-                val retriever = MediaMetadataRetriever()
-                var albumArtBytes: ByteArray? = null
-                try {
-                    retriever.setDataSource(applicationContext, contentUri)
-                    albumArtBytes = retriever.embeddedPicture
-                } catch (e: Exception) {
-                    println("Error retrieving metadata for file ID $id: ${e.message}")
-                } finally {
-                    retriever.release()
-                }
-
                 // --- Extended Metadata Extraction using safe helpers ---
                 val album = cursor.getNullableString(MediaStore.Audio.Media.ALBUM)
                 val albumArtist = cursor.getNullableString(MediaStore.Audio.Media.ALBUM_ARTIST)
@@ -345,7 +318,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                 if (duration > 30000) {
                     files.add(
                         AudioFile(
-                            id, contentUri, title, artist, duration, albumArtBytes,
+                            id, contentUri, title, artist, duration,
                             album, albumArtist, author, composer, track, year, genre,
                             size, dateAdded, dateModified,
                             bookmark, sampleRate, bitrate, bitsPerSample,
