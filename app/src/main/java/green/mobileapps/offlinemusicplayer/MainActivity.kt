@@ -62,7 +62,6 @@ data class AudioFile(
     val title: String,
     val artist: String,
     val duration: Long,
-    val albumArt: ByteArray?,
 
     // Media Store Metadata
     val album: String?,
@@ -108,7 +107,6 @@ data class AudioFile(
         parcel.readString()!!,
         parcel.readString()!!,
         parcel.readLong(),
-        parcel.createByteArray(),
         parcel.readString(),
         parcel.readString(),
         parcel.readString(),
@@ -143,7 +141,6 @@ data class AudioFile(
         parcel.writeString(title)
         parcel.writeString(artist)
         parcel.writeLong(duration)
-        parcel.writeByteArray(albumArt)
         parcel.writeString(album)
         parcel.writeString(albumArtist)
         parcel.writeString(author)
@@ -400,17 +397,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                     id.toString()
                 )
 
-                // --- MediaMetadataRetriever for Album Art ---
-                val retriever = MediaMetadataRetriever()
-                var albumArtBytes: ByteArray? = null
-                try {
-                    retriever.setDataSource(applicationContext, contentUri)
-                    albumArtBytes = retriever.embeddedPicture
-                } catch (e: Exception) {
-                    println("Error retrieving metadata for file ID $id: ${e.message}")
-                } finally {
-                    retriever.release()
-                }
+                // TODO album art ?
 
                 // --- Extended Metadata Extraction using safe helpers ---
                 val album = cursor.getNullableString(MediaStore.Audio.Media.ALBUM)
@@ -451,7 +438,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                 if (duration > 30000) {
                     files.add(
                         AudioFile(
-                            id, contentUri, title, artist, duration, albumArtBytes,
+                            id, contentUri, title, artist, duration,
                             album, albumArtist, author, composer, track, year, genre,
                             size, dateAdded, dateModified,
                             bookmark, sampleRate, bitrate, bitsPerSample,
