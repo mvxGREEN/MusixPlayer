@@ -2,12 +2,15 @@ package green.mobileapps.offlinemusicplayer
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Parcel
+import android.os.Parcelable
 import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -18,8 +21,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
+import green.mobileapps.offlinemusicplayer.databinding.ItemMusicFileBinding
 import green.mobileapps.offlinemusicplayer.databinding.MainActivityBinding
-import green.mobileapps.offlinemusicplayer.databinding.RecyclerItemFileBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -52,7 +55,6 @@ private fun Cursor.getNullableBoolean(columnName: String): Boolean? {
 }
 
 
-// 1. Data Model for an Audio File (Expanded with all requested fields)
 data class AudioFile(
     // Core fields
     val id: Long,
@@ -60,6 +62,7 @@ data class AudioFile(
     val title: String,
     val artist: String,
     val duration: Long,
+    val albumArt: ByteArray?,
 
     // Media Store Metadata
     val album: String?,
@@ -96,13 +99,99 @@ data class AudioFile(
     val isFavorite: Boolean,
     val isPending: Boolean,
     val isTrashed: Boolean
-)
+) : Parcelable {
+
+    // Parcelable implementation boilerplate
+    constructor(parcel: Parcel) : this(
+        parcel.readLong(),
+        parcel.readParcelable(Uri::class.java.classLoader)!!,
+        parcel.readString()!!,
+        parcel.readString()!!,
+        parcel.readLong(),
+        parcel.createByteArray(),
+        parcel.readString(),
+        parcel.readString(),
+        parcel.readString(),
+        parcel.readString(),
+        parcel.readValue(Int::class.java.classLoader) as? Int,
+        parcel.readValue(Int::class.java.classLoader) as? Int,
+        parcel.readString(),
+        parcel.readValue(Long::class.java.classLoader) as? Long,
+        parcel.readValue(Long::class.java.classLoader) as? Long,
+        parcel.readValue(Long::class.java.classLoader) as? Long,
+        parcel.readValue(Long::class.java.classLoader) as? Long,
+        parcel.readValue(Int::class.java.classLoader) as? Int,
+        parcel.readValue(Int::class.java.classLoader) as? Int,
+        parcel.readValue(Int::class.java.classLoader) as? Int,
+        parcel.readByte() != 0.toByte(),
+        parcel.readByte() != 0.toByte(),
+        parcel.readByte() != 0.toByte(),
+        parcel.readByte() != 0.toByte(),
+        parcel.readByte() != 0.toByte(),
+        parcel.readByte() != 0.toByte(),
+        parcel.readByte() != 0.toByte(),
+        parcel.readByte() != 0.toByte(),
+        parcel.readByte() != 0.toByte(),
+        parcel.readByte() != 0.toByte(),
+        parcel.readByte() != 0.toByte(),
+        parcel.readByte() != 0.toByte()
+    )
+
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeLong(id)
+        parcel.writeParcelable(uri, flags)
+        parcel.writeString(title)
+        parcel.writeString(artist)
+        parcel.writeLong(duration)
+        parcel.writeByteArray(albumArt)
+        parcel.writeString(album)
+        parcel.writeString(albumArtist)
+        parcel.writeString(author)
+        parcel.writeString(composer)
+        parcel.writeValue(track)
+        parcel.writeValue(year)
+        parcel.writeString(genre)
+        parcel.writeValue(size)
+        parcel.writeValue(dateAdded)
+        parcel.writeValue(dateModified)
+        parcel.writeValue(bookmark)
+        parcel.writeValue(sampleRate)
+        parcel.writeValue(bitrate)
+        parcel.writeValue(bitsPerSample)
+        parcel.writeByte(if (isAudiobook) 1 else 0)
+        parcel.writeByte(if (isMusic) 1 else 0)
+        parcel.writeByte(if (isPodcast) 1 else 0)
+        parcel.writeByte(if (isRecording) 1 else 0)
+        parcel.writeByte(if (isAlarm) 1 else 0)
+        parcel.writeByte(if (isNotification) 1 else 0)
+        parcel.writeByte(if (isRingtone) 1 else 0)
+        parcel.writeByte(if (isDownload) 1 else 0)
+        parcel.writeByte(if (isDrm) 1 else 0)
+        parcel.writeByte(if (isFavorite) 1 else 0)
+        parcel.writeByte(if (isPending) 1 else 0)
+        parcel.writeByte(if (isTrashed) 1 else 0)
+    }
+
+    override fun describeContents(): Int {
+        return 0
+    }
+
+    companion object CREATOR : Parcelable.Creator<AudioFile> {
+        override fun createFromParcel(parcel: Parcel): AudioFile {
+            return AudioFile(parcel)
+        }
+
+        override fun newArray(size: Int): Array<AudioFile?> {
+            return arrayOfNulls(size)
+        }
+    }
+}
 
 // 2. RecyclerView Adapter to display the list of files
-class MusicAdapter(private val context: Context, private var musicList: List<AudioFile>) :
+class MusicAdapter(private val activity: MainActivity, private var musicList: List<AudioFile>) :
     RecyclerView.Adapter<MusicAdapter.MusicViewHolder>() {
 
-    inner class MusicViewHolder(private val binding: RecyclerItemFileBinding) :
+    inner class MusicViewHolder(private val binding: ItemMusicFileBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(file: AudioFile) {
@@ -115,14 +204,13 @@ class MusicAdapter(private val context: Context, private var musicList: List<Aud
             binding.textArtist.text = "${file.artist}$albumInfo"
 
             binding.root.setOnClickListener {
-                // TODO start playback service
-                println("Playing: ${file.title} | Album: ${file.album} | Size: ${file.size} bytes")
+                //activity.startMusicPlayback(file)
             }
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MusicViewHolder {
-        val binding = RecyclerItemFileBinding.inflate(
+        val binding = ItemMusicFileBinding.inflate(
             LayoutInflater.from(parent.context),
             parent,
             false
@@ -151,6 +239,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         get() = Dispatchers.Main + job
 
     private lateinit var binding: MainActivityBinding
+
+    // Adapter needs access to the activity, so it must be initialized later
     private lateinit var musicAdapter: MusicAdapter
 
     // Determine the correct permission based on Android version
@@ -160,16 +250,38 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         Manifest.permission.READ_EXTERNAL_STORAGE
     }
 
-    // Register the permission request contract
-    private val requestPermissionLauncher = registerForActivityResult(
+    // For API 33+ (Android 13) we need to request POST_NOTIFICATIONS
+    private val notificationPermission = Manifest.permission.POST_NOTIFICATIONS
+
+    // Register the permission request contract for storage permission
+    private val requestStoragePermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
-            scanForAudioFiles()
+            // Storage granted, now check notification permission (API 33+)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requestNotificationPermission()
+            } else {
+                scanForAudioFiles()
+            }
         } else {
-            showStatus("Permission denied. Cannot scan local storage.")
+            showStatus("Storage permission denied. Cannot scan local storage.")
         }
     }
+
+    // Register the permission request contract for notification permission
+    private val requestNotificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            println("Notification permission granted.")
+        } else {
+            println("Notification permission denied. Media controls won't be visible in status bar.")
+        }
+        // Always proceed to scan regardless of notification permission outcome
+        scanForAudioFiles()
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -187,9 +299,24 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
 
     private fun checkPermissions() {
         if (ContextCompat.checkSelfPermission(this, mediaPermission) == PackageManager.PERMISSION_GRANTED) {
-            scanForAudioFiles()
+            // Storage permission granted. Check notification permission next.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requestNotificationPermission()
+            } else {
+                scanForAudioFiles()
+            }
         } else {
-            requestPermissionLauncher.launch(mediaPermission)
+            // Request storage permission
+            requestStoragePermissionLauncher.launch(mediaPermission)
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (ContextCompat.checkSelfPermission(this, notificationPermission) != PackageManager.PERMISSION_GRANTED) {
+            // Request notification permission
+            requestNotificationPermissionLauncher.launch(notificationPermission)
+        } else {
+            scanForAudioFiles()
         }
     }
 
@@ -273,6 +400,18 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                     id.toString()
                 )
 
+                // --- MediaMetadataRetriever for Album Art ---
+                val retriever = MediaMetadataRetriever()
+                var albumArtBytes: ByteArray? = null
+                try {
+                    retriever.setDataSource(applicationContext, contentUri)
+                    albumArtBytes = retriever.embeddedPicture
+                } catch (e: Exception) {
+                    println("Error retrieving metadata for file ID $id: ${e.message}")
+                } finally {
+                    retriever.release()
+                }
+
                 // --- Extended Metadata Extraction using safe helpers ---
                 val album = cursor.getNullableString(MediaStore.Audio.Media.ALBUM)
                 val albumArtist = cursor.getNullableString(MediaStore.Audio.Media.ALBUM_ARTIST)
@@ -312,7 +451,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                 if (duration > 30000) {
                     files.add(
                         AudioFile(
-                            id, contentUri, title, artist, duration,
+                            id, contentUri, title, artist, duration, albumArtBytes,
                             album, albumArtist, author, composer, track, year, genre,
                             size, dateAdded, dateModified,
                             bookmark, sampleRate, bitrate, bitsPerSample,
@@ -324,6 +463,21 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
             }
         }
         return files
+    }
+
+    // New function to start the MusicService
+    fun startMusicPlayback(file: AudioFile) {
+        val intent = Intent(this, MusicService::class.java).apply {
+            action = MusicService.ACTION_PLAY
+            putExtra(MusicService.EXTRA_AUDIO_FILE, file)
+        }
+
+        // Use startForegroundService for starting the service from the background (e.g., after the app loads)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
     }
 
     private fun showStatus(message: String) {
