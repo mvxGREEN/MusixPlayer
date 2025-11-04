@@ -1,13 +1,12 @@
 package green.mobileapps.offlinemusicplayer
 
-//import androidx.core.app.NotificationCompat
-//import androidx.media3.session.MediaStyleNotificationHelper.MediaStyle
-import android.R
+
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Build
@@ -219,12 +218,21 @@ class MusicService : MediaSessionService() {
     private fun createMediaNotification(): Notification {
         var builder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
 
+        val pendingIntent: PendingIntent =
+            Intent(this, MainActivity::class.java).let { notificationIntent ->
+                PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
+            }
+        builder.setSmallIcon(R.drawable.music_note_24px)
         builder.setAutoCancel(true)
         builder.setContentTitle("Default title")
         builder.setContentText("Default artist")
+        builder.setContentIntent(pendingIntent)
+        builder.addAction(R.drawable.skip_previous_24px, "Previous", getPendingIntentForAction("PREVIOUS"))
+        builder.addAction(R.drawable.pause_24px, "Pause", getPendingIntentForAction("PAUSE")) // or ic_play
+        builder.addAction(R.drawable.skip_next_24px, "Next", getPendingIntentForAction("NEXT"))
         builder.setStyle(
             MediaStyle()
-                .setMediaSession(session?.getSessionToken())
+                .setMediaSession(session?.sessionToken)
                 .setShowActionsInCompactView(0, 1, 2)
         )
         //builder.setSmallIcon()
@@ -253,6 +261,18 @@ class MusicService : MediaSessionService() {
         }
 
         return builder.build()
+    }
+
+    private fun getPendingIntentForAction(action: String): PendingIntent {
+        val intent = Intent(this, MusicService::class.java).apply {
+            this.action = action
+        }
+        return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+    }
+
+    private fun getAlbumArtBitmap(): Bitmap? {
+        // Implement logic to retrieve and return album art as a Bitmap
+        return null
     }
 
 }
