@@ -18,7 +18,9 @@
         android:roundIcon="@mipmap/ic_launcher_3mp_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Material3.Dark.NoActionBar"
-        tools:targetApi="34" >
+        tools:targetApi="34">
+
+        <meta-data android:name="com.google.android.gms.ads.adservices.AD_SERVICES_CONFIG" android:resource="@xml/ad_services_config" />
 
         <activity
             android:name=".MainActivity"
@@ -36,13 +38,21 @@
             </intent-filter>
         </activity>
 
-        <!-- Declare the new Music Service -->
         <service
             android:name=".MusicService"
             android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="mediaPlayback" />
+            android:exported="true"
+            android:label="Music Service"
+            android:permission="internet"
+            tools:targetApi="34"
+            android:foregroundServiceType="mediaPlayback"
+            android:attributionTags="MusicPlayer">
 
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
+        
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
