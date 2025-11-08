@@ -6,6 +6,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -15,6 +16,7 @@ import android.util.Log
 import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
+import androidx.media.session.MediaButtonReceiver
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -90,12 +92,16 @@ class MusicService : MediaSessionService() {
             }
         })
 
-
         // 2. Initialize MediaLibrarySession (The Controller Interface)
         mediaSesh = MediaSession.Builder(this, player!!)
             .setCallback(CustomMediaLibrarySessionCallback())
             .setSessionActivity(getMediaSessionActivity()!!) // Forced non-null as requested
             .build()
+
+        manager = this.getSystemService(NOTIFICATION_SERVICE) as NotificationManager?;
+        session = MediaSessionCompat(this, "MusicService")
+        val notification: Notification? = createMediaNotification() // Implement this method
+        startForeground(9876, notification)
     }
 
     // --- MediaLibraryService Overrides ---
@@ -107,10 +113,8 @@ class MusicService : MediaSessionService() {
 
     // 4. Handle initial playback request from MainActivity (via Intent)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        manager = this.getSystemService(NOTIFICATION_SERVICE) as NotificationManager?;
-        session = MediaSessionCompat(this, "MusicService")
-        val notification: Notification? = createMediaNotification() // Implement this method
-        startForeground(9876, notification)
+        Log.d(TAG, "onStartCommand called with action: ${intent?.action}")
+
 
         // 4b. Parse the intent and handle playback
         val file: AudioFile? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -131,7 +135,6 @@ class MusicService : MediaSessionService() {
 
             player?.prepare()
             player?.play()
-
         } else if (file == null && intent?.action == Intent.ACTION_MEDIA_BUTTON) {
             return super.onStartCommand(intent, flags, startId)
         } else if (player?.playbackState == Player.STATE_IDLE && lastLoadedFile != null) {
@@ -142,6 +145,14 @@ class MusicService : MediaSessionService() {
 
             player?.prepare()
             player?.play()
+        }
+
+        if (intent?.action == "PAUSE") {
+            Log.d(TAG, "pause clicked")
+
+            player?.pause()
+
+            // TODO change notification to pause state
         }
 
         return START_STICKY
