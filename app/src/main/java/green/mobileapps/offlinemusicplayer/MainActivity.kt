@@ -201,7 +201,8 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
             binding.textArtist.text = "${file.artist}$albumInfo"
 
             binding.root.setOnClickListener {
-                activity.startMusicPlayback(file)
+                // Pass the file and its position to the activity's start function
+                activity.startMusicPlayback(file, adapterPosition)
             }
         }
     }
@@ -225,6 +226,8 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
         musicList = newList
         notifyDataSetChanged()
     }
+
+    fun getCurrentList(): List<AudioFile> = musicList
 }
 
 // 3. Main Activity with Permission and Scanning Logic
@@ -457,11 +460,16 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         return files
     }
 
-    // New function to start the MusicService
-    fun startMusicPlayback(file: AudioFile) {
+    fun startMusicPlayback(file: AudioFile, index: Int) {
+        // Get 30 track max. playlist
+        val fullPlaylist = ArrayList(musicAdapter.getCurrentList().take(30))
+
         val intent = Intent(this, MusicService::class.java).apply {
             action = "ACTION_PLAY"
-            putExtra("EXTRA_AUDIO_FILE", file)
+            // NEW: Pass the full playlist and the starting index
+            putExtra("EXTRA_AUDIO_FILE", file) // Still pass the first file for simpler handling
+            putExtra("EXTRA_PLAYLIST", fullPlaylist)
+            putExtra("EXTRA_START_INDEX", index)
         }
 
         // Use startForegroundService for starting the service from the background (e.g., after the app loads)
@@ -472,8 +480,10 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         }
 
         val activityIntent = Intent(this, MusicActivity::class.java).apply {
-            // *** NEW: Pass the AudioFile to MusicActivity ***
+            // Pass the AudioFile to MusicActivity
             putExtra("EXTRA_AUDIO_FILE", file)
+            putExtra("EXTRA_PLAYLIST", fullPlaylist)
+            putExtra("EXTRA_START_INDEX", index)
         }
         startActivity(activityIntent)
     }

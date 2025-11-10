@@ -49,6 +49,11 @@ class MusicService : MediaSessionService() {
 
     // Constant key for intent extra, used in onStartCommand
     private val EXTRA_AUDIO_FILE = "EXTRA_AUDIO_FILE"
+    private val EXTRA_PLAYLIST = "EXTRA_PLAYLIST"
+    private val EXTRA_START_INDEX = "EXTRA_START_INDEX"
+
+    // Temporary storage for the last loaded file information - NOW THE WHOLE PLAYLIST
+    private var currentPlaylist: List<AudioFile> = emptyList()
 
     // Temporary storage for the last loaded file information
     private var lastLoadedFile: AudioFile? = null
@@ -77,6 +82,7 @@ class MusicService : MediaSessionService() {
 
         // 1. Initialize ExoPlayer (The Player)
         player = ExoPlayer.Builder(this).build()
+        player?.repeatMode = Player.REPEAT_MODE_ALL
 
         // Add a listener for debugging and state management
         player?.addListener(object : Player.Listener {
@@ -198,6 +204,51 @@ class MusicService : MediaSessionService() {
 
             player?.prepare()
             player?.play()
+        }
+
+        // 4b. Parse the intent and handle initial playback
+        val newPlaylist: List<AudioFile>? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent?.getParcelableArrayListExtra(EXTRA_PLAYLIST, AudioFile::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent?.getParcelableArrayListExtra(EXTRA_PLAYLIST)
+        }
+
+        val startIndex = intent?.getIntExtra(EXTRA_START_INDEX, 0) ?: 0
+
+
+        if (newPlaylist != null && newPlaylist.isNotEmpty()) {
+            // Check if the playlist has actually changed
+            if (currentPlaylist != newPlaylist) {
+                currentPlaylist = newPlaylist
+                Log.d(TAG, "New playlist received with ${currentPlaylist.size} tracks. Starting index: $startIndex")
+
+                // Convert the full playlist to MediaItems
+                val mediaItems = currentPlaylist.map { it.toMediaItem() }
+
+                // Stop any current playback
+                player?.stop()
+
+                // Set the media list and start from the correct index
+                player?.setMediaItems(mediaItems)
+                player?.seekToDefaultPosition(startIndex) // Seek to the file that was clicked
+
+                player?.prepare()
+                player?.play()
+            } else if (player?.currentMediaItemIndex != startIndex) {
+                // Same playlist, but user clicked a different track
+                Log.d(TAG, "Same playlist, seeking to new index: $startIndex")
+                player?.seekTo(startIndex, 0)
+                player?.play() // Ensure playback starts if it was paused
+            } else {
+                // Same playlist, same track - maybe just play/unpause
+                if (player?.playbackState == Player.STATE_IDLE || player?.playbackState == Player.STATE_ENDED) {
+                    player?.prepare()
+                    player?.play()
+                } else if (player?.isPlaying == false) {
+                    player?.play()
+                }
+            }
         }
 
         // Return the result of the default handling for MediaButtonReceiver, which
