@@ -470,6 +470,10 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         } else {
             startService(intent)
         }
+
+        // 2. Open the MusicActivity (the full-screen playback controls)
+        val activityIntent = Intent(this, MusicActivity::class.java)
+        startActivity(activityIntent)
     }
 
     private fun showStatus(message: String) {

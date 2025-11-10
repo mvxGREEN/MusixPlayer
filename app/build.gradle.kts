@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.androidx.media3.common)
     implementation(libs.androidx.media3.common.ktx)
     implementation(libs.androidx.media3.session)
+    implementation(libs.media3.ui)
 
 
     // media1 support
@@ -75,7 +76,7 @@ dependencies {
 
     // media3 additional support
     // For building media playback UIs using Views
-    //implementation(libs.media3.ui)
+    //
     // Common functionality for reading and writing media containers
     //implementation(libs.androidx.media3.container)
     // Common functionality for media database components

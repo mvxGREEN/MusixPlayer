@@ -38,6 +38,14 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".MusicActivity"
+            android:windowSoftInputMode="adjustPan"
+            android:exported="true">
+
+
+
+        </activity>
+
         <service
             android:name=".MusicService"
             android:enabled="true"
