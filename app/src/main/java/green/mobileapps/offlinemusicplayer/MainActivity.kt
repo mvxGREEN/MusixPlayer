@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.os.Parcel
 import android.os.Parcelable
 import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -434,10 +435,12 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
 
                 // Add only files with a reasonable duration (e.g., over 30 seconds)
                 if (duration > 30000
+                    && !album?.contains("Voice Recorder")!!
                     && !isRecording
                     && !isRingtone
                     && !isAlarm
                     && !isNotification) {
+                    //Log.d("loadAudioFilesFromStorage", "Adding file: $title, $artist, $album")
                     files.add(
                         AudioFile(
                             id, contentUri, title, artist, duration,
