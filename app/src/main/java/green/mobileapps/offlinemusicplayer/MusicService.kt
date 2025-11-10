@@ -153,6 +153,18 @@ class MusicService : MediaSessionService() {
             player?.pause()
 
             // TODO change notification to pause state
+        } else if (intent?.action == "PREVIOUS") {
+            Log.d(TAG, "previous clicked")
+
+            player?.nextMediaItemIndex
+
+            // TODO handle previous click
+        } else if (intent?.action == "NEXT") {
+            Log.d(TAG, "next clicked")
+
+            player?.pause()
+
+            // TODO handle next click
         }
 
         return START_STICKY
