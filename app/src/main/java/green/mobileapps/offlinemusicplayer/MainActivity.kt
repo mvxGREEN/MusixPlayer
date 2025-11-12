@@ -20,6 +20,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import green.mobileapps.offlinemusicplayer.databinding.ItemMusicFileBinding
@@ -188,6 +189,8 @@ data class AudioFile(
 class MusicAdapter(private val activity: MainActivity, private var musicList: List<AudioFile>) :
     RecyclerView.Adapter<MusicAdapter.MusicViewHolder>() {
 
+    private var musicListFull: List<AudioFile> = musicList
+
     inner class MusicViewHolder(private val binding: ItemMusicFileBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
@@ -223,15 +226,32 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
     override fun getItemCount(): Int = musicList.size
 
     fun updateList(newList: List<AudioFile>) {
-        musicList = newList
+        // Update both the full list and the displayed list
+        musicListFull = newList
+        musicList = newList // Initially, the displayed list is the full list
         notifyDataSetChanged()
     }
 
     fun getCurrentList(): List<AudioFile> = musicList
+
+    fun filterList(query: String) {
+        val lowerCaseQuery = query.lowercase()
+        musicList = if (lowerCaseQuery.isBlank()) {
+            // If the query is empty, show the full list
+            musicListFull
+        } else {
+            // Filter the full list
+            musicListFull.filter {
+                it.title.lowercase().contains(lowerCaseQuery) ||
+                        it.artist.lowercase().contains(lowerCaseQuery)
+            }
+        }
+        notifyDataSetChanged()
+    }
 }
 
 // 3. Main Activity with Permission and Scanning Logic
-class MainActivity : AppCompatActivity(), CoroutineScope {
+class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryTextListener {
     // Coroutine setup
     private var job: Job = Job()
     override val coroutineContext: CoroutineContext
@@ -288,12 +308,18 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         setContentView(binding.root)
 
         setupRecyclerView()
+        setupSearchView()
         checkPermissions()
     }
 
     private fun setupRecyclerView() {
         musicAdapter = MusicAdapter(this, emptyList())
         binding.recyclerViewMusic.adapter = musicAdapter
+    }
+
+    private fun setupSearchView() {
+        // Set up the SearchView listener
+        binding.searchViewMusic.setOnQueryTextListener(this)
     }
 
     private fun checkPermissions() {
@@ -488,6 +514,21 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         startActivity(activityIntent)
     }
 
+    override fun onQueryTextSubmit(query: String?): Boolean {
+        // Hide the soft keyboard on submit
+        binding.searchViewMusic.clearFocus()
+        return true
+    }
+
+    /**
+     * Called when the query text is changed by the user. This is where the filtering happens.
+     */
+    override fun onQueryTextChange(newText: String?): Boolean {
+        // Filter the list as the user types
+        musicAdapter.filterList(newText.orEmpty())
+        return true
+    }
+
     private fun showStatus(message: String) {
         binding.recyclerViewMusic.visibility = View.GONE
         binding.textStatus.visibility = View.VISIBLE
@@ -496,11 +537,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Cancel the coroutine job when the activity is destroyed
+        // cancel the coroutine job when the activity is destroyed
         job.cancel()
     }
-
-
 
     fun onRateClick(item: MenuItem) {}
     fun onHelpClick(item: MenuItem) {}
