@@ -1,7 +1,6 @@
 package green.mobileapps.offlinemusicplayer
 
 import android.content.ComponentName
-import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -37,13 +36,12 @@ class MusicActivity : AppCompatActivity() {
     @OptIn(UnstableApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_music)
+        setContentView(R.layout.music_activity)
 
         // --- UI Initialization ---
         playerView = findViewById(R.id.player_view)
         textTitle = findViewById(R.id.text_track_title)
         textArtist = findViewById(R.id.text_track_artist)
-        imageAlbumArt = findViewById(R.id.image_album_art) // Initialize new ImageView
 
         // Setting a default icon if no actual album art is available
         // Note: You would replace this logic if you extract album art from the AudioFile

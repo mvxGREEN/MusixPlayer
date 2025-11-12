@@ -4,34 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="@android:color/black"
     tools:context=".MusicActivity">
-
-    <!-- ============================================== -->
-    <!--                  BACKGROUND CONTENT: METADATA & ART    -->
-    <!-- The content is centered and visible across the entire screen behind the controls. -->
-    <!-- ============================================== -->
-
-    <!-- Album Art / Default Icon -->
-    <ImageView
-        android:id="@+id/image_album_art"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginStart="32dp"
-        android:layout_marginTop="32dp"
-        android:layout_marginEnd="32dp"
-        android:layout_marginBottom="16dp"
-        android:scaleType="centerCrop"
-        android:background="#1E1E1E"
-        android:contentDescription="@string/album_art_description"
-        app:layout_constraintBottom_toTopOf="@+id/text_track_title"
-        app:layout_constraintDimensionRatio="1:1"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.4"
-        app:layout_constraintVertical_chainStyle="packed"
-        tools:src="@drawable/music_note_24px" />
 
     <!-- Track Title -->
     <TextView
@@ -54,7 +29,7 @@
         app:layout_constraintBottom_toTopOf="@+id/text_track_artist"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/image_album_art"
+        app:layout_constraintTop_toTopOf="parent"
         tools:text="Track Title Goes Here" />
 
     <!-- Artist and Album Info -->
@@ -69,17 +44,10 @@
         android:textAlignment="center"
         android:textColor="#B3FFFFFF"
         android:textSize="16sp"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/text_track_title"
         tools:text="Artist Name • Album Name" />
-
-
-    <!-- ============================================== -->
-    <!--                  FOREGROUND: PLAYER CONTROLS   -->
-    <!-- This covers the entire screen, making controls always visible and allowing content to show through. -->
-    <!-- ============================================== -->
 
     <androidx.media3.ui.PlayerView
         android:id="@+id/player_view"

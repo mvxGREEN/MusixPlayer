@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/naturalLight"
+    android:background="@android:color/black"
     android:fitsSystemWindows="true"
     tools:context=".MainActivity">
 
@@ -12,7 +12,7 @@
         android:id="@+id/toolbar_search"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="?attr/colorPrimary"
+        android:background="@color/shadowInvisible"
         android:elevation="4dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
