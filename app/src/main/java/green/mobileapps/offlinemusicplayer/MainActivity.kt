@@ -260,7 +260,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
     private lateinit var binding: MainActivityBinding
 
     // Adapter needs access to the activity, so it must be initialized later
-    private lateinit var musicAdapter: MusicAdapter
+    public lateinit var musicAdapter: MusicAdapter
 
     // Determine the correct permission based on Android version
     private val mediaPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -488,7 +488,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
 
     fun startMusicPlayback(file: AudioFile, index: Int) {
         // Get 30 track max. playlist
-        val fullPlaylist = ArrayList(musicAdapter.getCurrentList().take(60))
+        val fullPlaylist = ArrayList(musicAdapter.getCurrentList().take(200))
 
         val intent = Intent(this, MusicService::class.java).apply {
             action = "ACTION_PLAY"

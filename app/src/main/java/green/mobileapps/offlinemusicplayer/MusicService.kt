@@ -52,7 +52,7 @@ class MusicService : MediaSessionService() {
     private val EXTRA_START_INDEX = "EXTRA_START_INDEX"
 
     // Temporary storage for the last loaded file information - NOW THE WHOLE PLAYLIST
-    private var currentPlaylist: List<AudioFile> = emptyList()
+    var currentPlaylist: List<AudioFile> = emptyList()
 
     // Temporary storage for the last loaded file information
     private var lastLoadedFile: AudioFile? = null

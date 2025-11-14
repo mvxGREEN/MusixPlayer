@@ -22,9 +22,10 @@ class MusicActivity : AppCompatActivity() {
     private lateinit var playerView: PlayerView
     private lateinit var controllerFuture: ListenableFuture<MediaController>
 
+    // UI Elements for metadata
     private lateinit var textTitle: TextView
     private lateinit var textArtist: TextView
-    //private lateinit var imageAlbumArt: ImageView // New Album Art ImageView
+    private lateinit var imageAlbumArt: ImageView // New Album Art ImageView
 
     // Stored Audio File
     private var currentAudioFile: AudioFile? = null
@@ -52,6 +53,7 @@ class MusicActivity : AppCompatActivity() {
         playerView.setShowRewindButton(true)
         playerView.setShowNextButton(true)
         playerView.setShowPreviousButton(true)
+        playerView.setShowShuffleButton(true)
 
         // --- Retrieve AudioFile from Intent ---
         currentAudioFile = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
