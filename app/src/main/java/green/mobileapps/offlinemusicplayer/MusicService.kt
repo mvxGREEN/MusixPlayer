@@ -209,7 +209,7 @@ class MusicService : MediaSessionService() {
             return
         }
 
-         val currentMediaItems = getAllMediaItems(player)
+        val currentMediaItems = getAllMediaItems(player)
         val newMediaIds = newPlaylist.map { it.id.toString() }
 
         // Check if the playlist has actually changed by comparing media IDs
@@ -372,16 +372,18 @@ class MusicService : MediaSessionService() {
         )
 
         builder.setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        // START MODIFICATION: Change content intent to MusicActivity
         builder.setContentIntent(
             PendingIntent.getActivity(
                 this, 2939,
                 Intent(
                     this,
-                    MainActivity::class.java
+                    MusicActivity::class.java // Target MusicActivity
                 ).setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT),
                 PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
         )
+        // END MODIFICATION
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             builder.setChannelId(NOTIFICATION_CHANNEL_ID)
