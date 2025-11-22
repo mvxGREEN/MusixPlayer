@@ -34,6 +34,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
+// NEW IMPORT for keyboard control
+import android.view.inputmethod.InputMethodManager
 
 // Helper extension function to safely get a string from a cursor
 private fun Cursor.getNullableString(columnName: String): String? {
@@ -522,6 +524,13 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
         checkPermissions()
     }
 
+    // NEW: Override onResume to ensure focus/keyboard are hidden when returning
+    override fun onResume() {
+        super.onResume()
+        // Ensure the keyboard is hidden and focus is cleared when returning to the activity
+        hideKeyboardAndClearFocus()
+    }
+
     private fun setupObservers() {
         // Observe the filtered list and update the adapter
         viewModel.filteredList.observe(this) { audioList ->
@@ -602,6 +611,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
         // 1. Set the current track index in the persistent store
         PlaylistRepository.currentTrackIndex = actualIndex
 
+        // NEW: Hide the keyboard and clear focus when a track is clicked
+        hideKeyboardAndClearFocus()
+
         val intent = Intent(this, MusicService::class.java).apply {
             // 2. Action to tell the service to start playback from the repository state
             action = "ACTION_PLAY_FROM_REPO"
@@ -620,8 +632,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
     }
 
     override fun onQueryTextSubmit(query: String?): Boolean {
-        // Hide the soft keyboard on submit
-        binding.searchViewMusic.clearFocus()
+        // NEW: Hide the soft keyboard and clear focus on submit
+        hideKeyboardAndClearFocus()
         return true
     }
 
@@ -638,6 +650,16 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
         binding.recyclerViewMusic.visibility = View.GONE
         binding.textStatus.visibility = View.VISIBLE
         binding.textStatus.text = message
+    }
+
+    // NEW: Helper function to hide the keyboard and clear focus
+    private fun hideKeyboardAndClearFocus() {
+        // 1. Clear focus from the SearchView to hide the cursor
+        binding.searchViewMusic.clearFocus()
+
+        // 2. Explicitly hide the keyboard using InputMethodManager
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(binding.searchViewMusic.windowToken, 0)
     }
 
     override fun onDestroy() {
