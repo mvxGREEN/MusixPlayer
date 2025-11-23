@@ -435,23 +435,53 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
             val albumInfo = if (file.album != null) " • ${file.album}" else ""
             binding.textArtist.text = "${file.artist}$albumInfo"
 
-            if (file.albumId != null) {
-                val albumArtUri = getAlbumArtUri(file.albumId)
-                binding.imageAlbumArt.setImageURI(albumArtUri)
-
-                // If setting the URI failed (no image found), revert to the default icon
-                if (binding.imageAlbumArt.drawable == null) {
-                    binding.imageAlbumArt.setImageResource(R.drawable.music_note_24px)
-                    binding.imageAlbumArt.imageTintList = ContextCompat.getColorStateList(itemView.context, R.color.colorPrimary)
-                } else {
-                    // Remove tint if album art is successfully loaded
-                    binding.imageAlbumArt.imageTintList = null
-                }
+            val albumArtUri = if (file.albumId != null) {
+                getAlbumArtUri(file.albumId)
             } else {
-                // No album ID, use the default icon
-                binding.imageAlbumArt.setImageResource(R.drawable.music_note_24px)
-                binding.imageAlbumArt.imageTintList = ContextCompat.getColorStateList(itemView.context, R.color.colorPrimary)
+                null
             }
+
+            // Define the rounding radius (e.g., 12 pixels)
+            val cornerRadius = 12 // You can adjust this value
+
+            // Use Glide to load the image
+            com.bumptech.glide.Glide.with(itemView.context)
+                .load(albumArtUri)
+                // --- TRANSFORMATIONS ADDED HERE ---
+                // 1. CenterCrop ensures the image fits the ImageView bounds nicely.
+                // 2. RoundedCorners applies the radius to all four corners.
+                .transform(
+                    com.bumptech.glide.load.resource.bitmap.CenterCrop(),
+                    com.bumptech.glide.load.resource.bitmap.RoundedCorners(cornerRadius)
+                )
+                // ------------------------------------
+                .placeholder(R.drawable.music_note_24px)
+                .error(R.drawable.music_note_24px)
+                .addListener(object : com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable> {
+                    override fun onLoadFailed(
+                        e: com.bumptech.glide.load.engine.GlideException?,
+                        model: Any?,
+                        target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        // On failure (or null model), apply the tint to the placeholder
+                        binding.imageAlbumArt.imageTintList = ContextCompat.getColorStateList(itemView.context, R.color.colorPrimary)
+                        return false
+                    }
+
+                    override fun onResourceReady(
+                        resource: android.graphics.drawable.Drawable,
+                        model: Any,
+                        target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>,
+                        dataSource: com.bumptech.glide.load.DataSource,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        // On successful load, remove the tint
+                        binding.imageAlbumArt.imageTintList = null
+                        return false
+                    }
+                })
+                .into(binding.imageAlbumArt)
 
             binding.root.setOnClickListener {
                 // Pass the file and its position to the activity's start function.
