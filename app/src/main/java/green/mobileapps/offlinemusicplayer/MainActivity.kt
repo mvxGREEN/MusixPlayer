@@ -669,7 +669,7 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
                 // If editing, clicking the root view does nothing, as the user must save or exit.
             }
 
-            // NEW: Long click listener to enter edit mode
+            /* TODO Long click listener to enter edit mode
             binding.root.setOnLongClickListener {
                 if (editingPosition != RecyclerView.NO_POSITION) {
                     // Already editing something, exit current edit before starting a new one
@@ -678,6 +678,8 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
                 editListener.startEditing(adapterPosition)
                 true // Consume the long click event
             }
+
+             */
 
             // NEW: Save button click listener
             binding.buttonSaveEdit.setOnClickListener {
