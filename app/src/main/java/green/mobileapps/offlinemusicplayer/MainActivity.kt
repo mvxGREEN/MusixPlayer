@@ -509,21 +509,30 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
             val albumInfo = if (file.album != null) " • ${file.album}" else ""
             binding.textArtist.text = "${file.artist}$albumInfo"
 
-            // --- REVISED ALBUM ART LOADING FIX ---
-            // Issue 1 (Original): Unrelated images were loading (MediaStore cache corruption).
-            // Issue 2 (Last attempt): No images were loading (Glide couldn't extract embedded art from file.uri alone).
-            // Solution: Use the specialized MediaStore Album Art URI if the albumId is present,
-            // as this is the most reliable path for list views, and fall back to the generic
-            // file URI if albumId is missing.
-            val imageSourceUri: Any = file.albumId?.let { albumId ->
-                // 1. Try the dedicated album art URI (primary source for MediaStore cache)
-                getAlbumArtUri(albumId)
-            } ?: file.uri // 2. Fall back to the file's content URI if albumId is missing
+            // --- FINAL ALBUM ART LOADING FIX ---
+            // If the album name is generic ("documents" or "music"), the MediaStore's albumId cache
+            // is likely corrupted/unreliable, causing incorrect art to load.
+            // In these cases, we must force Glide to load the embedded art directly from the file URI.
+            val albumName = file.album?.lowercase()
+            val problematicAlbum = albumName == "documents" || albumName == "music"
+
+            val imageSourceUri: Any = if (problematicAlbum) {
+                // Strategy 1: Album name is generic/problematic. Use the file URI directly,
+                // relying on Glide/Android to extract embedded art, which is the "source of truth".
+                file.uri
+            } else if (file.albumId != null) {
+                // Strategy 2: Album name is specific and albumId exists. Use the MediaStore cache URI,
+                // which is fast and reliable for correctly tagged files.
+                getAlbumArtUri(file.albumId)
+            } else {
+                // Strategy 3: Default fallback. Use the file URI.
+                file.uri
+            }
 
 
             // Use Glide to load the image
             com.bumptech.glide.Glide.with(itemView.context)
-                .load(imageSourceUri) // Use the priority URI (album art cache or file content)
+                .load(imageSourceUri) // Use the conditionally selected URI
                 .transform(com.bumptech.glide.load.resource.bitmap.CircleCrop())
                 .placeholder(R.drawable.default_album_art_192px)
                 .error(R.drawable.default_album_art_192px)
@@ -534,6 +543,7 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
                         target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>,
                         isFirstResource: Boolean
                     ): Boolean {
+                        // Log the failure to diagnose
                         Log.e("Glide", "Album Art Load Failed for URI: $imageSourceUri", e)
                         return false
                     }
@@ -551,7 +561,7 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
                     }
                 })
                 .into(binding.imageAlbumArt)
-            // --- REVISED FIX END ---
+            // --- FINAL FIX END ---
 
 
             // on click listener
