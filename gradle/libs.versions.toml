@@ -1,6 +1,6 @@
 [versions]
 activityKtx = "1.11.0"
-agp = "8.10.1"
+agp = "8.13.1"
 appcompatVersion = "1.7.1"
 constraintlayout = "2.2.1"
 coreKtxVersion = "1.17.0"
