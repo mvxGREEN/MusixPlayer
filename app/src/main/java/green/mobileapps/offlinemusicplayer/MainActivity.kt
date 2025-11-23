@@ -445,10 +445,7 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
             // Use Glide to load the image
             com.bumptech.glide.Glide.with(itemView.context)
                 .load(albumArtUri)
-                // --- CIRCLE CROP TRANSFORMATION ADDED HERE ---
-                // This single transformation handles both cropping and rounding to a circle.
                 .transform(com.bumptech.glide.load.resource.bitmap.CircleCrop())
-                // ---------------------------------------------
                 .placeholder(R.drawable.music_note_24px)
                 .error(R.drawable.music_note_24px)
                 .addListener(object : com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable> {
