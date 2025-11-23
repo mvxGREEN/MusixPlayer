@@ -561,10 +561,12 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
             val isEditing = adapterPosition == editingPosition
 
             // --- Set Text Content (Display or Edit) ---
-            val trackPrefix = if (file.track != null && file.track > 0) "${file.track}. " else ""
-            val fullTitleText = "$trackPrefix${file.title}"
-            // MODIFIED: fullArtistText now only contains the artist name
-            val fullArtistText = file.artist
+            // REMOVED: val trackPrefix = if (file.track != null && file.track > 0) "${file.track}. " else ""
+            val fullTitleText = file.title // Title now only contains the raw title, no prefix
+
+            // UNDO MODIFICATION: Re-include the album name in the artist text
+            val albumInfo = if (file.album != null) " • ${file.album}" else ""
+            val fullArtistText = "${file.artist}$albumInfo"
 
             // 1. Display/Edit View Setup
             if (isEditing) {
@@ -575,7 +577,7 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
                 binding.editTextArtist.visibility = View.VISIBLE
                 binding.buttonSaveEdit.visibility = View.VISIBLE
 
-                // Set initial text for editing, removing the track prefix from the title
+                // Set initial text for editing, which uses the raw title
                 binding.editTextTitle.setText(file.title)
                 binding.editTextArtist.setText(file.artist)
 
@@ -593,7 +595,7 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
 
                 // Set display text
                 binding.textTitle.text = fullTitleText
-                // MODIFIED: Only setting artist name here
+                // RESTORED: Setting artist and album name here
                 binding.textArtist.text = fullArtistText
             }
 
