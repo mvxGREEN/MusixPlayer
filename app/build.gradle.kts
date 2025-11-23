@@ -67,6 +67,8 @@ dependencies {
     implementation(libs.androidx.media3.session)
     implementation(libs.media3.ui)
 
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     // media1 support
     //implementation(libs.media)

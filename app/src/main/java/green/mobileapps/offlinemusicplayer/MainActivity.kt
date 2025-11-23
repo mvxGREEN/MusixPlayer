@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.ContentUris
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
@@ -16,6 +17,7 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
@@ -34,8 +36,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
-// NEW IMPORT for keyboard control
-import android.view.inputmethod.InputMethodManager
 
 // Helper extension function to safely get a string from a cursor
 private fun Cursor.getNullableString(columnName: String): String? {
@@ -68,6 +68,9 @@ data class AudioFile(
     val title: String,
     val artist: String,
     val duration: Long,
+
+    // Album Art Metadata (NEW)
+    val albumId: Long?,
 
     // Media Store Metadata
     val album: String?,
@@ -113,6 +116,7 @@ data class AudioFile(
         parcel.readString()!!,
         parcel.readString()!!,
         parcel.readLong(),
+        parcel.readValue(Long::class.java.classLoader) as? Long, // albumId
         parcel.readString(),
         parcel.readString(),
         parcel.readString(),
@@ -147,6 +151,7 @@ data class AudioFile(
         parcel.writeString(title)
         parcel.writeString(artist)
         parcel.writeLong(duration)
+        parcel.writeValue(albumId)
         parcel.writeString(album)
         parcel.writeString(albumArtist)
         parcel.writeString(author)
@@ -188,6 +193,16 @@ data class AudioFile(
             return arrayOfNulls(size)
         }
     }
+}
+
+/**
+ * Constructs the Uri for the album art image given the album ID.
+ */
+fun getAlbumArtUri(albumId: Long): Uri {
+    return ContentUris.withAppendedId(
+        Uri.parse("content://media/external/audio/albumart"),
+        albumId
+    )
 }
 
 // 1. Playlist Repository (Singleton) - Acts as the persistent store
@@ -260,7 +275,7 @@ class MusicViewModel(application: android.app.Application) : AndroidViewModel(ap
         }
     }
 
-    // Function to load audio files using ContentResolver (MOVED from MainActivity)
+    // Function to load audio files using ContentResolver
     private fun loadAudioFilesFromStorage(context: Context): List<AudioFile> {
         val files = mutableListOf<AudioFile>()
         val contentResolver = context.contentResolver
@@ -272,6 +287,7 @@ class MusicViewModel(application: android.app.Application) : AndroidViewModel(ap
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ARTIST,
             MediaStore.Audio.Media.DURATION,
+            MediaStore.Audio.Media.ALBUM_ID,
 
             // Requested Fields:
             MediaStore.Audio.Media.BOOKMARK,
@@ -318,6 +334,7 @@ class MusicViewModel(application: android.app.Application) : AndroidViewModel(ap
                 val title = cursor.getNullableString(MediaStore.Audio.Media.TITLE) ?: "Unknown Title"
                 val artist = cursor.getNullableString(MediaStore.Audio.Media.ARTIST) ?: "Unknown Artist"
                 val duration = cursor.getNullableLong(MediaStore.Audio.Media.DURATION) ?: 0L
+                val albumId = cursor.getNullableLong(MediaStore.Audio.Media.ALBUM_ID)
 
                 val contentUri: Uri = Uri.withAppendedPath(
                     MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
@@ -369,7 +386,7 @@ class MusicViewModel(application: android.app.Application) : AndroidViewModel(ap
                     && !isNotification) {
                     files.add(
                         AudioFile(
-                            id, contentUri, title, artist, duration,
+                            id, contentUri, title, artist, duration, albumId,
                             album, albumArtist, author, composer, track, year, genre,
                             size, dateAdded, dateModified,
                             bookmark, sampleRate, bitrate, bitsPerSample,
@@ -403,11 +420,9 @@ class MusicViewModel(application: android.app.Application) : AndroidViewModel(ap
 }
 
 
-// 3. RecyclerView Adapter to display the list of files
+// recyclerview adapter to display the list of files
 class MusicAdapter(private val activity: MainActivity, private var musicList: List<AudioFile>) :
     RecyclerView.Adapter<MusicAdapter.MusicViewHolder>() {
-
-    // Removed musicListFull and filterList as ViewModel manages filtering
 
     inner class MusicViewHolder(private val binding: ItemMusicFileBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -417,9 +432,26 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
             val trackPrefix = if (file.track != null && file.track > 0) "${file.track}. " else ""
             binding.textTitle.text = "$trackPrefix${file.title}"
 
-
             val albumInfo = if (file.album != null) " • ${file.album}" else ""
             binding.textArtist.text = "${file.artist}$albumInfo"
+
+            if (file.albumId != null) {
+                val albumArtUri = getAlbumArtUri(file.albumId)
+                binding.imageAlbumArt.setImageURI(albumArtUri)
+
+                // If setting the URI failed (no image found), revert to the default icon
+                if (binding.imageAlbumArt.drawable == null) {
+                    binding.imageAlbumArt.setImageResource(R.drawable.music_note_24px)
+                    binding.imageAlbumArt.imageTintList = ContextCompat.getColorStateList(itemView.context, R.color.colorPrimary)
+                } else {
+                    // Remove tint if album art is successfully loaded
+                    binding.imageAlbumArt.imageTintList = null
+                }
+            } else {
+                // No album ID, use the default icon
+                binding.imageAlbumArt.setImageResource(R.drawable.music_note_24px)
+                binding.imageAlbumArt.imageTintList = ContextCompat.getColorStateList(itemView.context, R.color.colorPrimary)
+            }
 
             binding.root.setOnClickListener {
                 // Pass the file and its position to the activity's start function.
