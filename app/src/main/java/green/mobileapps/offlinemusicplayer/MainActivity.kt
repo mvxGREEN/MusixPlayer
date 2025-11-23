@@ -435,26 +435,20 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
             val albumInfo = if (file.album != null) " • ${file.album}" else ""
             binding.textArtist.text = "${file.artist}$albumInfo"
 
+            // GLIDE LOAD ALBUM ART
             val albumArtUri = if (file.albumId != null) {
                 getAlbumArtUri(file.albumId)
             } else {
                 null
             }
 
-            // Define the rounding radius (e.g., 12 pixels)
-            val cornerRadius = 12 // You can adjust this value
-
             // Use Glide to load the image
             com.bumptech.glide.Glide.with(itemView.context)
                 .load(albumArtUri)
-                // --- TRANSFORMATIONS ADDED HERE ---
-                // 1. CenterCrop ensures the image fits the ImageView bounds nicely.
-                // 2. RoundedCorners applies the radius to all four corners.
-                .transform(
-                    com.bumptech.glide.load.resource.bitmap.CenterCrop(),
-                    com.bumptech.glide.load.resource.bitmap.RoundedCorners(cornerRadius)
-                )
-                // ------------------------------------
+                // --- CIRCLE CROP TRANSFORMATION ADDED HERE ---
+                // This single transformation handles both cropping and rounding to a circle.
+                .transform(com.bumptech.glide.load.resource.bitmap.CircleCrop())
+                // ---------------------------------------------
                 .placeholder(R.drawable.music_note_24px)
                 .error(R.drawable.music_note_24px)
                 .addListener(object : com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable> {
@@ -483,11 +477,15 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
                 })
                 .into(binding.imageAlbumArt)
 
+
+            // on click listener
             binding.root.setOnClickListener {
                 // Pass the file and its position to the activity's start function.
                 // adapterPosition is the index in the *filtered* list.
                 activity.startMusicPlayback(file, adapterPosition)
             }
+
+            // todo on long click listener: edit track info, delete track, etc.
         }
     }
 
