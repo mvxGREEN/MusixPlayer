@@ -39,8 +39,15 @@ android {
 }
 
 dependencies {
+    // base
     implementation(libs.androidx.core.ktx.v1120)
     implementation(libs.androidx.appcompat.v161)
+
+    // ui
+    implementation(libs.glide)
+    implementation(libs.swiperefreshlayout)
+    annotationProcessor(libs.compiler)
+    implementation(libs.androidx.swiperefreshlayout)
     implementation(libs.material.v1110)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.recyclerview)
@@ -60,15 +67,11 @@ dependencies {
 
     // media3 support
     implementation("androidx.media:media:1.7.1")
-
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.common)
     implementation(libs.androidx.media3.common.ktx)
     implementation(libs.androidx.media3.session)
     implementation(libs.media3.ui)
-
-    implementation("com.github.bumptech.glide:glide:4.16.0")
-    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     // media1 support
     //implementation(libs.media)

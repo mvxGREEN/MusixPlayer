@@ -247,6 +247,10 @@ class MusicViewModel(application: android.app.Application) : AndroidViewModel(ap
     private val _statusMessage = MutableLiveData<String>()
     val statusMessage: LiveData<String> = _statusMessage
 
+    // NEW: LiveData to indicate loading state
+    private val _isLoading = MutableLiveData<Boolean>(false)
+    val isLoading: LiveData<Boolean> = _isLoading
+
     // Coroutine setup
     private val scope = CoroutineScope(Dispatchers.IO + Job())
 
@@ -260,6 +264,9 @@ class MusicViewModel(application: android.app.Application) : AndroidViewModel(ap
     }
 
     fun loadAudioFiles(context: Context) {
+        if (_isLoading.value == true) return // Prevent multiple simultaneous scans
+
+        _isLoading.postValue(true)
         _statusMessage.postValue("Scanning for audio files...")
 
         scope.launch {
@@ -272,6 +279,8 @@ class MusicViewModel(application: android.app.Application) : AndroidViewModel(ap
                 // The filteredList observer handles the UI update
                 _statusMessage.postValue("Loaded ${audioList.size} tracks.")
             }
+
+            _isLoading.postValue(false)
         }
     }
 
@@ -577,6 +586,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
 
         setupRecyclerView()
         setupSearchView()
+        setupSwipeRefresh()
         setupObservers()
         checkPermissions()
     }
@@ -609,6 +619,20 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
                 showStatus(message)
             }
         }
+
+        // NEW: Observe loading state to control the refresh indicator
+        viewModel.isLoading.observe(this) { isLoading ->
+            // Assuming your layout binding has a property named `swipeRefreshLayout`
+            binding.swipeRefreshLayout.isRefreshing = isLoading
+        }
+
+        // Observe status messages (e.g., scanning, permission denied)
+        viewModel.statusMessage.observe(this) { message ->
+            // Update status UI if needed
+            if (!message.contains("Loaded")) {
+                showStatus(message)
+            }
+        }
     }
 
     private fun setupRecyclerView() {
@@ -619,6 +643,17 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
     private fun setupSearchView() {
         // Set up the SearchView listener
         binding.searchViewMusic.setOnQueryTextListener(this)
+    }
+
+    private fun setupSwipeRefresh() {
+        // Assuming your layout binding has a property named `swipeRefreshLayout`
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            // 1. Clear any existing list display (optional, but good for UX)
+            musicAdapter.updateList(emptyList())
+
+            // 2. Trigger the scan to reload all data
+            viewModel.loadAudioFiles(applicationContext)
+        }
     }
 
     private fun checkPermissions() {
