@@ -18,6 +18,8 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
+import android.widget.ImageButton
+import android.widget.PopupMenu
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
@@ -36,6 +38,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
+
+// --- SORTING DEFINITIONS ---
+enum class SortBy { LAST_MODIFIED, TITLE, ARTIST, ALBUM, DURATION }
+data class SortState(val by: SortBy, val ascending: Boolean)
+// ---------------------------
 
 // Helper extension function to safely get a string from a cursor
 private fun Cursor.getNullableString(columnName: String): String? {
@@ -239,7 +246,7 @@ class MusicViewModel(application: android.app.Application) : AndroidViewModel(ap
     // The full, unfiltered list from the repository
     private val fullAudioList: LiveData<List<AudioFile>> = PlaylistRepository.audioFiles
 
-    // The list maintained for filtering purposes (displayed in RecyclerView)
+    // The list maintained for filtering and sorting purposes (displayed in RecyclerView)
     private var musicListFull: List<AudioFile> = emptyList()
     private val _filteredList = MutableLiveData<List<AudioFile>>(emptyList())
     val filteredList: LiveData<List<AudioFile>> = _filteredList
@@ -251,6 +258,13 @@ class MusicViewModel(application: android.app.Application) : AndroidViewModel(ap
     private val _isLoading = MutableLiveData<Boolean>(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
+    // NEW: LiveData to hold the current search query
+    private var currentQuery: String = ""
+
+    // NEW: LiveData to hold the current sorting state (Default: LAST_MODIFIED Descending)
+    private val _sortState = MutableLiveData(SortState(SortBy.LAST_MODIFIED, false))
+    val sortState: LiveData<SortState> = _sortState
+
     // Coroutine setup
     private val scope = CoroutineScope(Dispatchers.IO + Job())
 
@@ -258,8 +272,8 @@ class MusicViewModel(application: android.app.Application) : AndroidViewModel(ap
         // Observe the repository's full list to manage internal list and update filtered list
         fullAudioList.observeForever { newList ->
             musicListFull = newList
-            // When the full list is updated, apply the last filter (or show the full list if no filter)
-            filterList("")
+            // When the full list is updated, apply the current sort and filter
+            applySortAndFilter()
         }
     }
 
@@ -284,7 +298,7 @@ class MusicViewModel(application: android.app.Application) : AndroidViewModel(ap
         }
     }
 
-    // Function to load audio files using ContentResolver
+    // Function to load audio files using ContentResolver (unchanged)
     private fun loadAudioFilesFromStorage(context: Context): List<AudioFile> {
         val files = mutableListOf<AudioFile>()
         val contentResolver = context.contentResolver
@@ -409,17 +423,68 @@ class MusicViewModel(application: android.app.Application) : AndroidViewModel(ap
         return files
     }
 
+    /**
+     * Applies the current search query and the current sort state to the full list.
+     */
+    fun applySortAndFilter() {
+        val sortedList = applySort(musicListFull, _sortState.value!!)
+        val filteredList = applyFilter(sortedList, currentQuery)
+        _filteredList.value = filteredList
+    }
+
+    /**
+     * Updates the current search query and applies sort/filter.
+     */
     fun filterList(query: String) {
+        currentQuery = query
+        applySortAndFilter()
+    }
+
+    /**
+     * Updates the sort state and reapplies sort/filter.
+     */
+    fun setSortState(newSortState: SortState) {
+        _sortState.value = newSortState
+        applySortAndFilter()
+    }
+
+    /**
+     * Toggles the ascending/descending state and reapplies sort/filter.
+     */
+    fun toggleSortDirection() {
+        val current = _sortState.value ?: SortState(SortBy.LAST_MODIFIED, false)
+        val newDirection = !current.ascending
+        _sortState.value = current.copy(ascending = newDirection)
+        applySortAndFilter()
+    }
+
+    private fun applyFilter(list: List<AudioFile>, query: String): List<AudioFile> {
         val lowerCaseQuery = query.lowercase()
-        val newList = if (lowerCaseQuery.isBlank()) {
-            musicListFull
+        return if (lowerCaseQuery.isBlank()) {
+            list
         } else {
-            musicListFull.filter {
+            list.filter {
                 it.title.lowercase().contains(lowerCaseQuery) ||
                         it.artist.lowercase().contains(lowerCaseQuery)
             }
         }
-        _filteredList.value = newList
+    }
+
+    private fun applySort(list: List<AudioFile>, state: SortState): List<AudioFile> {
+        val comparator: Comparator<AudioFile> = when (state.by) {
+            SortBy.TITLE -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.title }
+            SortBy.ARTIST -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.artist }
+            // Nullable strings need a null-safe comparison, using compareBy for default ordering
+            SortBy.ALBUM -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.album ?: "" }
+            SortBy.DURATION -> compareBy { it.duration }
+            // Default to LAST_MODIFIED, with nulls treated as 0L (oldest)
+            SortBy.LAST_MODIFIED -> compareBy { it.dateModified ?: 0L }
+        }
+
+        val sortedList = list.sortedWith(comparator)
+
+        // Apply the direction based on the current state
+        return if (state.ascending) sortedList else sortedList.reversed()
     }
 
     override fun onCleared() {
@@ -444,16 +509,21 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
             val albumInfo = if (file.album != null) " • ${file.album}" else ""
             binding.textArtist.text = "${file.artist}$albumInfo"
 
-            // GLIDE LOAD ALBUM ART
-            val albumArtUri = if (file.albumId != null) {
-                getAlbumArtUri(file.albumId)
-            } else {
-                null
-            }
+            // --- REVISED ALBUM ART LOADING FIX ---
+            // Issue 1 (Original): Unrelated images were loading (MediaStore cache corruption).
+            // Issue 2 (Last attempt): No images were loading (Glide couldn't extract embedded art from file.uri alone).
+            // Solution: Use the specialized MediaStore Album Art URI if the albumId is present,
+            // as this is the most reliable path for list views, and fall back to the generic
+            // file URI if albumId is missing.
+            val imageSourceUri: Any = file.albumId?.let { albumId ->
+                // 1. Try the dedicated album art URI (primary source for MediaStore cache)
+                getAlbumArtUri(albumId)
+            } ?: file.uri // 2. Fall back to the file's content URI if albumId is missing
+
 
             // Use Glide to load the image
             com.bumptech.glide.Glide.with(itemView.context)
-                .load(albumArtUri)
+                .load(imageSourceUri) // Use the priority URI (album art cache or file content)
                 .transform(com.bumptech.glide.load.resource.bitmap.CircleCrop())
                 .placeholder(R.drawable.default_album_art_192px)
                 .error(R.drawable.default_album_art_192px)
@@ -464,8 +534,7 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
                         target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>,
                         isFirstResource: Boolean
                     ): Boolean {
-                        // On failure (or null model), apply effects to the placeholder
-                        //binding.imageAlbumArt.imageTintList = ContextCompat.getColorStateList(itemView.context, R.color.colorPrimary)
+                        Log.e("Glide", "Album Art Load Failed for URI: $imageSourceUri", e)
                         return false
                     }
 
@@ -482,6 +551,7 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
                     }
                 })
                 .into(binding.imageAlbumArt)
+            // --- REVISED FIX END ---
 
 
             // on click listener
@@ -533,6 +603,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
 
     // Adapter needs access to the activity, so it must be initialized later
     public lateinit var musicAdapter: MusicAdapter
+    private lateinit var sortButton: ImageButton // Reference to the new sort criterion button
+    private lateinit var sortDirectionButton: ImageButton // Reference to the new sort direction button
 
     // Determine the correct permission based on Android version
     private val mediaPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -584,11 +656,77 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
             ViewModelProvider.AndroidViewModelFactory.getInstance(application))
             .get(MusicViewModel::class.java)
 
+        // NEW: Initialize the sort buttons from the toolbar's ConstraintLayout
+        val toolbarLayout = binding.toolbarSearch.getChildAt(0) as? ViewGroup
+        sortButton = toolbarLayout?.findViewById(R.id.button_sort) ?: throw IllegalStateException("Sort button not found in toolbar layout")
+        // NEW: Initialize the direction button
+        sortDirectionButton = toolbarLayout.findViewById(R.id.button_sort_direction) ?: throw IllegalStateException("Sort direction button not found in toolbar layout")
+
         setupRecyclerView()
         setupSearchView()
+        setupSortButton() // Setup the sort criterion button logic
+        setupSortDirectionButton() // NEW: Setup the sort direction toggle logic
         setupSwipeRefresh()
         setupObservers()
         checkPermissions()
+    }
+
+    // NEW: Function to setup the sort direction toggle button
+    private fun setupSortDirectionButton() {
+        sortDirectionButton.setOnClickListener {
+            // Toggle the direction state in the ViewModel
+            viewModel.toggleSortDirection()
+        }
+    }
+
+    // UPDATED: Function to setup the sort criterion button and its menu
+    private fun setupSortButton() {
+        sortButton.setOnClickListener { view ->
+            val popup = PopupMenu(this, view)
+            popup.menu.apply {
+                // Add sorting criteria (without direction toggles)
+                add(0, SortBy.LAST_MODIFIED.ordinal, 0, "Last Modified (Default)")
+                add(0, SortBy.TITLE.ordinal, 1, "Title")
+                add(0, SortBy.ARTIST.ordinal, 2, "Artist")
+                add(0, SortBy.ALBUM.ordinal, 3, "Album")
+                add(0, SortBy.DURATION.ordinal, 4, "Duration")
+            }
+
+            popup.setOnMenuItemClickListener { item: MenuItem ->
+                val currentSortState = viewModel.sortState.value ?: SortState(SortBy.LAST_MODIFIED, false)
+                val sortCriterion = SortBy.entries.find { it.ordinal == item.itemId }
+
+                if (sortCriterion != null) {
+                    // Criterion change logic:
+                    // Only change the criterion. Keep the existing direction.
+                    // If the criterion is the same, toggle the direction automatically as a shortcut.
+                    val newAscending = if (sortCriterion == currentSortState.by) {
+                        !currentSortState.ascending // Toggle direction if same is clicked
+                    } else {
+                        // Keep current direction if new criterion is selected, or use a default if desired
+                        currentSortState.ascending
+                    }
+
+                    viewModel.setSortState(SortState(sortCriterion, newAscending))
+                    true
+                } else {
+                    false
+                }
+            }
+            popup.show()
+        }
+
+        // Observe the sort state to dynamically update the direction button icon
+        viewModel.sortState.observe(this) { state ->
+            val iconResId = if (state.ascending) {
+                // Assuming R.drawable.ascending_24px exists
+                R.drawable.ascending_24px
+            } else {
+                // Assuming R.drawable.descending_24px exists
+                R.drawable.descending_24px
+            }
+            sortDirectionButton.setImageResource(iconResId)
+        }
     }
 
     // NEW: Override onResume to ensure focus/keyboard are hidden when returning
@@ -682,32 +820,30 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
     // This function is now responsible for setting the current play state in the repository
     // and starting the service without passing large data via Intent.
     fun startMusicPlayback(file: AudioFile, filteredIndex: Int) {
-        // Get the full, unfiltered list from the persistent store.
-        val fullPlaylist = PlaylistRepository.getFullPlaylist()
+        // Get the currently displayed (sorted & filtered) list from the adapter
+        val currentDisplayedList = musicAdapter.getCurrentList()
 
-        if (fullPlaylist.isEmpty()) {
-            Log.e("MainActivity", "Error: Full playlist is empty. Cannot start playback.")
-            // You might want to show a Toast message here to the user.
+        if (currentDisplayedList.isEmpty()) {
+            Log.e("MainActivity", "Error: Current displayed list is empty. Cannot start playback.")
             return
         }
 
-        // Find the index of the clicked file (by ID) in the FULL, unfiltered playlist.
-        // This is necessary because the MediaSessionService will be loaded with the full list.
-        val actualIndex = fullPlaylist.indexOfFirst { it.id == file.id }
-
-        if (actualIndex == -1) {
-            Log.e("MainActivity", "Error: AudioFile not found in the full playlist. Cannot start playback.")
-            return
-        }
+        // Find the index of the clicked file (by ID) in the *current displayed* playlist.
+        // The `filteredIndex` passed to this function is the index in `currentDisplayedList`.
+        val actualIndex = filteredIndex
 
         // 1. Set the current track index in the persistent store
         PlaylistRepository.currentTrackIndex = actualIndex
+
+        // 2. Set the *current displayed list* as the service's playlist in the repository.
+        // This is crucial: the service must play the list the user sees (sorted/filtered).
+        PlaylistRepository.setFiles(currentDisplayedList)
 
         // NEW: Hide the keyboard and clear focus when a track is clicked
         hideKeyboardAndClearFocus()
 
         val intent = Intent(this, MusicService::class.java).apply {
-            // 2. Action to tell the service to start playback from the repository state
+            // 3. Action to tell the service to start playback from the repository state
             action = "ACTION_PLAY_FROM_REPO"
         }
 
