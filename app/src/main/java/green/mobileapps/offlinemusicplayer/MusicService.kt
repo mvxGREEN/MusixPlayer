@@ -83,6 +83,7 @@ class MusicService : MediaSessionService() {
             .build()
 
         player = ExoPlayer.Builder(this)
+            .setHandleAudioBecomingNoisy(true)
             .setAudioAttributes(audioAttributes, true)
             .build()
         player?.repeatMode = Player.REPEAT_MODE_ALL
