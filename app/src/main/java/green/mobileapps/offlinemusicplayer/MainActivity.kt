@@ -46,6 +46,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay // ADDED: Import delay for timing fix
 import kotlin.coroutines.CoroutineContext
 import androidx.activity.addCallback // Import for new back press handling
+import me.zhanghai.android.fastscroll.FastScrollerBuilder
+
 // REMOVED: import com.bumptech.glide.load.resource.bitmap.VideoDecoder // Removed unresolvable import
 
 // --- SORTING DEFINITIONS ---
@@ -988,9 +990,11 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
     }
 
     private fun setupRecyclerView() {
-        // Pass 'this' as the MusicEditListener
+        // pass 'this' as the MusicEditListener
         musicAdapter = MusicAdapter(this, emptyList(), this)
         binding.recyclerViewMusic.adapter = musicAdapter
+        // build fast scrollbar
+        FastScrollerBuilder(binding.recyclerViewMusic).useMd2Style().build()
     }
 
     private fun setupSearchView() {
