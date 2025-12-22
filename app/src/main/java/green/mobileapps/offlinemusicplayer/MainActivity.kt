@@ -640,7 +640,9 @@ class MusicAdapter(private val activity: MainActivity, private var musicList: Li
             }
 
             val cacheKey = "${file.id}_${file.dateModified}"
-            val isProblematic = file.album?.lowercase() == "music" || file.albumId == 553547078986512838L
+            val isProblematic = file.album?.lowercase() == "music"
+                    || file.albumId == 553547078986512838L
+                    || file.artist.lowercase() == "<unknown>"
 
             if (isProblematic) {
                 val cachedBytes = imageCache[file.id]
