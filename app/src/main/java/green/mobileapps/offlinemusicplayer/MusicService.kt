@@ -61,7 +61,6 @@ class MusicService : MediaSessionService() {
             .setTitle(title)
             .setArtist(artist)
             .setAlbumTitle(album)
-            .setGenre(genre)
 
         return MediaItem.Builder()
             .setUri(uri)

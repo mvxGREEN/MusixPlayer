@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -11,8 +13,8 @@ android {
         applicationId = "green.mobileapps.offlinemusicplayer"
         minSdk = 24
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.7"
+        versionCode = 9
+        versionName = "1.2.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -75,22 +77,8 @@ dependencies {
     implementation(libs.library)
     implementation(libs.media3.ui)
 
-    // media1 support
-    //implementation(libs.media)
-
-    // media metadata retriever
-    //implementation(libs.androidx.exifinterface)
-
-    // media3 additional support
-    // For building media playback UIs using Views
-    //
-    // Common functionality for reading and writing media containers
-    //implementation(libs.androidx.media3.container)
-    // Common functionality for media database components
-    //implementation(libs.androidx.media3.database)
-    // Common functionality for media decoders
-    //implementation(libs.androidx.media3.decoder)
-    // Common functionality for loading data
-    //implementation(libs.androidx.media3.datasource)
+    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-crashlytics")
 
 }
