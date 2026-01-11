@@ -896,6 +896,25 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
         viewModel.isLoading.observe(this) { isLoading ->
             binding.swipeRefreshLayout.isRefreshing = isLoading
         }
+
+        PlaylistRepository.queue.observe(this) { queue ->
+            if (queue.isNotEmpty()) {
+                binding.queueBarRoot.visibility = View.VISIBLE
+                val nextTrack = queue[0]
+                binding.textUpNextTitle.text = "Up Next: ${nextTrack.title}"
+
+                // NEW: Add extra padding to the bottom of the list
+                // (approx 80dp converted to pixels, adjusts for the floating bar)
+                val paddingBottom = (80 * resources.displayMetrics.density).toInt()
+                binding.recyclerViewMusic.setPadding(8, 8, 8, paddingBottom)
+            } else {
+                binding.queueBarRoot.visibility = View.GONE
+
+                // NEW: Reset padding to default when bar is hidden
+                val defaultPadding = (8 * resources.displayMetrics.density).toInt() // Matches your XML 8dp
+                binding.recyclerViewMusic.setPadding(defaultPadding, defaultPadding, defaultPadding, defaultPadding)
+            }
+        }
     }
 
     private fun setupRecyclerView() {
