@@ -51,6 +51,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import kotlinx.coroutines.isActive
 import me.zhanghai.android.fastscroll.FastScrollerBuilder
+import java.util.Collections
 
 // --- SORTING DEFINITIONS ---
 enum class SortBy { DATE_ADDED, TITLE, ARTIST, ALBUM, DURATION }
@@ -228,6 +229,10 @@ object PlaylistRepository {
     val audioFiles: LiveData<List<AudioFile>> = _audioFiles
     var currentTrackIndex: Int = -1
 
+    // NEW: Queue Management
+    private val _queue = MutableLiveData<MutableList<AudioFile>>(mutableListOf())
+    val queue: LiveData<MutableList<AudioFile>> = _queue
+
     fun setFiles(files: List<AudioFile>) {
         _audioFiles.postValue(files)
     }
@@ -238,9 +243,6 @@ object PlaylistRepository {
         if (index != -1) {
             currentList[index] = updatedFile
             _audioFiles.postValue(currentList)
-            Log.d("Repository", "Updated file with ID: ${updatedFile.id}")
-        } else {
-            Log.w("Repository", "File with ID ${updatedFile.id} not found for update.")
         }
     }
 
@@ -254,6 +256,47 @@ object PlaylistRepository {
     }
 
     fun getFullPlaylist(): List<AudioFile> = _audioFiles.value ?: emptyList()
+
+    // --- Queue Methods ---
+    fun addToQueue(file: AudioFile) {
+        val currentQueue = _queue.value ?: mutableListOf()
+        currentQueue.add(file)
+        _queue.postValue(currentQueue)
+    }
+
+    fun removeFromQueue(position: Int) {
+        val currentQueue = _queue.value ?: return
+        if (position in currentQueue.indices) {
+            currentQueue.removeAt(position)
+            _queue.postValue(currentQueue)
+        }
+    }
+
+    fun swapQueueItems(fromPosition: Int, toPosition: Int) {
+        val currentQueue = _queue.value ?: return
+        if (fromPosition < toPosition) {
+            for (i in fromPosition until toPosition) {
+                Collections.swap(currentQueue, i, i + 1)
+            }
+        } else {
+            for (i in fromPosition downTo toPosition + 1) {
+                Collections.swap(currentQueue, i, i - 1)
+            }
+        }
+        _queue.postValue(currentQueue)
+    }
+
+    fun popNextInQueue(): AudioFile? {
+        val currentQueue = _queue.value ?: return null
+        if (currentQueue.isNotEmpty()) {
+            val item = currentQueue.removeAt(0)
+            _queue.postValue(currentQueue)
+            return item
+        }
+        return null
+    }
+
+    fun hasQueue(): Boolean = _queue.value?.isNotEmpty() == true
 }
 
 
@@ -736,6 +779,11 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
         setupSwipeRefresh()
         setupObservers()
         checkPermissions()
+
+        binding.queueBarRoot.setOnClickListener {
+            val bottomSheet = QueueBottomSheetFragment()
+            bottomSheet.show(supportFragmentManager, "QueueBottomSheet")
+        }
     }
 
     private fun setupBackButton() {
@@ -853,7 +901,58 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
     private fun setupRecyclerView() {
         musicAdapter = MusicAdapter(this, emptyList(), this)
         binding.recyclerViewMusic.adapter = musicAdapter
+        // Build FastScroller
         FastScrollerBuilder(binding.recyclerViewMusic).useMd2Style().build()
+
+        // --- NEW: Add Swipe Logic ---
+        val swipeHandler = object : androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
+            0, // No drag-and-drop (up/down)
+            androidx.recyclerview.widget.ItemTouchHelper.RIGHT // Swipe Right only
+        ) {
+            override fun onMove(
+                rv: RecyclerView,
+                vh: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean = false
+
+            // Make swipe easier to trigger (0.5 is default, 0.3 requires less travel)
+            override fun getSwipeThreshold(viewHolder: RecyclerView.ViewHolder): Float {
+                return 0.3f
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    val file = musicAdapter.getCurrentList()[position]
+
+                    // Add to Queue
+                    PlaylistRepository.addToQueue(file)
+
+                    // Show confirmation
+                    Toast.makeText(this@MainActivity, "Added to Queue: ${file.title}", Toast.LENGTH_SHORT).show()
+
+                    // CRITICAL: Reset the item view so it comes back after being swiped away
+                    musicAdapter.notifyItemChanged(position)
+                }
+            }
+
+            // Optional: Add visual feedback (fade out) during swipe
+            override fun onChildDraw(
+                c: android.graphics.Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+                // You can add background color/icon drawing logic here in the future
+            }
+        }
+
+        // Attach the helper to the RecyclerView
+        androidx.recyclerview.widget.ItemTouchHelper(swipeHandler).attachToRecyclerView(binding.recyclerViewMusic)
     }
 
     private fun setupSearchView() {

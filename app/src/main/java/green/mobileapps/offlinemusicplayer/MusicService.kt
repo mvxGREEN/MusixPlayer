@@ -99,8 +99,25 @@ class MusicService : MediaSessionService() {
                 }
                 Log.d(TAG, "Playback State Changed: $stateName")
                 if (playbackState == Player.STATE_ENDED) {
-                    // Automatically go to the next track if available
-                    player?.seekToNext()
+                    // NEW: Check Queue Logic
+                    if (PlaylistRepository.hasQueue()) {
+                        val nextItem = PlaylistRepository.popNextInQueue()
+                        if (nextItem != null) {
+                            Log.d(TAG, "Playing next item from Queue: ${nextItem.title}")
+
+                            // Add to ExoPlayer playlist immediately after current
+                            val currentIndex = player?.currentMediaItemIndex ?: 0
+                            val nextIndex = currentIndex + 1
+
+                            player?.addMediaItem(nextIndex, nextItem.toMediaItem())
+                            player?.seekTo(nextIndex, 0)
+                            player?.prepare()
+                            player?.play()
+                        }
+                    } else {
+                        // Standard behavior: go to next in main list
+                        player?.seekToNext()
+                    }
                 }
 
                 // Update the notification whenever the state changes (e.g., Play to Pause)
