@@ -925,13 +925,21 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
                 if (position != RecyclerView.NO_POSITION) {
                     val file = musicAdapter.getCurrentList()[position]
 
-                    // Add to Queue
+                    // 1. Update the Repository (Visually for the drawer)
                     PlaylistRepository.addToQueue(file)
 
-                    // Show confirmation
-                    Toast.makeText(this@MainActivity, "Added to Queue: ${file.title}", Toast.LENGTH_SHORT).show()
+                    // 2. NEW: Send command to Service to queue it in ExoPlayer
+                    val intent = Intent(this@MainActivity, MusicService::class.java).apply {
+                        action = "ACTION_ADD_TO_QUEUE"
+                        putExtra("EXTRA_QUEUE_FILE", file) // Make sure AudioFile is Parcelable
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(intent)
+                    } else {
+                        startService(intent)
+                    }
 
-                    // CRITICAL: Reset the item view so it comes back after being swiped away
+                    Toast.makeText(this@MainActivity, "Added to Queue: ${file.title}", Toast.LENGTH_SHORT).show()
                     musicAdapter.notifyItemChanged(position)
                 }
             }

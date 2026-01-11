@@ -46,7 +46,8 @@ class MusicService : MediaSessionService() {
     private val EXTRA_AUDIO_FILE = "EXTRA_AUDIO_FILE"
     // private val EXTRA_PLAYLIST = "EXTRA_PLAYLIST" // REMOVED
     // private val EXTRA_START_INDEX = "EXTRA_START_INDEX" // REMOVED
-    private val ACTION_PLAY_FROM_REPO = "ACTION_PLAY_FROM_REPO" // New action constant
+    private val ACTION_PLAY_FROM_REPO = "ACTION_PLAY_FROM_REPO"
+    private val ACTION_ADD_TO_QUEUE = "ACTION_ADD_TO_QUEUE"
 
     // Removed currentPlaylist as the repository holds the data
     // var currentPlaylist: List<AudioFile> = emptyList()
@@ -85,52 +86,21 @@ class MusicService : MediaSessionService() {
             .setHandleAudioBecomingNoisy(true)
             .setAudioAttributes(audioAttributes, true)
             .build()
-        player?.repeatMode = Player.REPEAT_MODE_ALL
+        player?.repeatMode = Player.REPEAT_MODE_OFF
 
-        // Add a listener for debugging and state management
         player?.addListener(object : Player.Listener {
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                val stateName = when (playbackState) {
-                    Player.STATE_IDLE -> "STATE_IDLE"
-                    Player.STATE_BUFFERING -> "STATE_BUFFERING"
-                    Player.STATE_READY -> "STATE_READY"
-                    Player.STATE_ENDED -> "STATE_ENDED"
-                    else -> "UNKNOWN"
-                }
-                Log.d(TAG, "Playback State Changed: $stateName")
-                if (playbackState == Player.STATE_ENDED) {
-                    // NEW: Check Queue Logic
+
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                super.onMediaItemTransition(mediaItem, reason)
+
+                // Just keep the UI in sync
+                if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
+                    // We successfully moved to the next song.
+                    // If we have a queue in the Repo, remove the top item because it's now playing.
                     if (PlaylistRepository.hasQueue()) {
-                        val nextItem = PlaylistRepository.popNextInQueue()
-                        if (nextItem != null) {
-                            Log.d(TAG, "Playing next item from Queue: ${nextItem.title}")
-
-                            // Add to ExoPlayer playlist immediately after current
-                            val currentIndex = player?.currentMediaItemIndex ?: 0
-                            val nextIndex = currentIndex + 1
-
-                            player?.addMediaItem(nextIndex, nextItem.toMediaItem())
-                            player?.seekTo(nextIndex, 0)
-                            player?.prepare()
-                            player?.play()
-                        }
-                    } else {
-                        // Standard behavior: go to next in main list
-                        player?.seekToNext()
+                        PlaylistRepository.popNextInQueue() // Updates the LiveData/UI
                     }
                 }
-
-                // Update the notification whenever the state changes (e.g., Play to Pause)
-                //updateMediaNotification()
-            }
-
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                // Also update when play/pause changes, even if state is READY
-                //updateMediaNotification()
-            }
-
-            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                Log.e(TAG, "Player Error: ${error.message}", error)
             }
         })
 
@@ -192,6 +162,26 @@ class MusicService : MediaSessionService() {
             ACTION_PLAY_FROM_REPO -> {
                 Log.d(TAG, "ACTION_PLAY_FROM_REPO received.")
                 handleNewPlaybackRequest() // New method to read from repository
+                return START_STICKY
+            }
+            ACTION_ADD_TO_QUEUE -> {
+                val file = intent.getParcelableExtra<AudioFile>("EXTRA_QUEUE_FILE")
+                if (file != null) {
+                    Log.d(TAG, "Adding to ExoPlayer queue: ${file.title}")
+
+                    // Logic: Insert this song immediately AFTER the current playing song
+                    val currentIndex = player?.currentMediaItemIndex ?: 0
+                    val insertIndex = currentIndex + 1
+
+                    player?.addMediaItem(insertIndex, file.toMediaItem())
+
+                    // Note: We do NOT seek or play. We just queue it up.
+                    // When the current song finishes, ExoPlayer will naturally flow into this one.
+
+                    // Also: We do not need to pop from Repository manually here,
+                    // but you need to sync them.
+                    // Actually, if we do this, we don't need 'onMediaItemTransition' logic anymore!
+                }
                 return START_STICKY
             }
         }
