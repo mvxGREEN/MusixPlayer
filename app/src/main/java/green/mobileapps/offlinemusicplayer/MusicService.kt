@@ -282,45 +282,54 @@ class MusicService : MediaSessionService() {
             return
         }
 
-        val currentMediaIds = getAllMediaItems(player) // Now returns IDs
+        val currentMediaIds = getAllMediaItems(player)
         val newMediaIds = newPlaylist.map { it.id.toString() }
 
-        // Check if the playlist has actually changed by comparing media IDs list
-        val playlistChanged = currentMediaIds != newMediaIds // Direct comparison of ID lists
+        // Check if the playlist has actually changed
+        // Note: If we had a queue injected, 'currentMediaIds' will differ from 'newMediaIds', forcing a reload. This is good.
+        val playlistChanged = currentMediaIds != newMediaIds
 
         if (playlistChanged) {
-            Log.d(TAG, "Playlist changed or initialized. Loading ${newPlaylist.size} tracks. Starting index: $startIndex")
-
-            // Convert the full playlist to MediaItems
+            Log.d(TAG, "Playlist changed. Loading ${newPlaylist.size} tracks.")
             val mediaItems = newPlaylist.map { it.toMediaItem() }
 
             player?.stop()
-            player?.clearMediaItems() // Clear existing items
-
-            // Set the media list and start from the correct index
-            player?.setMediaItems(mediaItems)
-            player?.seekToDefaultPosition(startIndex) // Seek to the file that was clicked
-
+            player?.clearMediaItems()
+            player?.setMediaItems(mediaItems) // This sets the "Main" list
+            player?.seekTo(startIndex, 0)     // Jump to the clicked song
             player?.prepare()
-            player?.play() // <--- CRITICAL: Start playback
+            player?.play()
         } else if (player?.currentMediaItemIndex != startIndex) {
-            // Same playlist, but user clicked a different track
-            Log.d(TAG, "Same playlist, seeking to new index: $startIndex")
+            // Same list, different song
             player?.seekTo(startIndex, 0)
-            player?.play() // <--- CRITICAL: Ensure playback starts
+            player?.play()
         } else {
-            // Same playlist, same track - maybe just play/unpause
-            Log.d(TAG, "Same playlist, same track. Toggling play/pause if needed.")
-            if (player?.isPlaying == false) {
-                player?.play() // <--- CRITICAL: Play if paused
-            }
-            // If it's already playing, do nothing.
+            // Same song, just toggle
+            if (player?.isPlaying == false) player?.play()
         }
-        // Update the lastLoadedFile for initial notification setup
-        lastLoadedFile = PlaylistRepository.getCurrentTrack()
 
-        // Force a notification update immediately after starting playback
-        //updateMediaNotification()
+        // -----------------------------------------------------------------
+        // 👇 NEW: RESTORE THE QUEUE 👇
+        // -----------------------------------------------------------------
+        // The player now has the main list [A, B, C...]. We need to inject [Q1, Q2] after A.
+        if (PlaylistRepository.hasQueue()) {
+            val queueItems = PlaylistRepository.queue.value ?: return
+
+            Log.d(TAG, "Restoring queue of ${queueItems.size} items.")
+
+            // 1. Convert Queue to MediaItems
+            val queueMediaItems = queueItems.map { it.toMediaItem() }
+
+            // 2. Determine insertion point (Immediately after current song)
+            val current = player?.currentMediaItemIndex ?: 0
+            val insertIndex = current + 1
+
+            // 3. Inject them into the active player
+            player?.addMediaItems(insertIndex, queueMediaItems)
+        }
+        // -----------------------------------------------------------------
+
+        lastLoadedFile = PlaylistRepository.getCurrentTrack()
     }
 
     fun getAllMediaItems(player: ExoPlayer?): List<String> {
