@@ -48,6 +48,8 @@ class MusicService : MediaSessionService() {
     // private val EXTRA_START_INDEX = "EXTRA_START_INDEX" // REMOVED
     private val ACTION_PLAY_FROM_REPO = "ACTION_PLAY_FROM_REPO"
     private val ACTION_ADD_TO_QUEUE = "ACTION_ADD_TO_QUEUE"
+    private val ACTION_REORDER_QUEUE = "ACTION_REORDER_QUEUE"
+    private val ACTION_REMOVE_FROM_QUEUE = "ACTION_REMOVE_FROM_QUEUE"
 
     // Removed currentPlaylist as the repository holds the data
     // var currentPlaylist: List<AudioFile> = emptyList()
@@ -203,6 +205,48 @@ class MusicService : MediaSessionService() {
                     }
 
                     player?.addMediaItem(insertIndex, file.toMediaItem())
+                }
+                return START_STICKY
+            }
+            ACTION_REORDER_QUEUE -> {
+                val fromQueueIndex = intent.getIntExtra("EXTRA_FROM", -1)
+                val toQueueIndex = intent.getIntExtra("EXTRA_TO", -1)
+
+                if (fromQueueIndex != -1 && toQueueIndex != -1) {
+                    val currentIndex = player?.currentMediaItemIndex ?: 0
+
+                    // Logic: The Queue starts immediately after the current song.
+                    // So, Player Index = Current Index + 1 + Queue Index
+                    val playerFromIndex = currentIndex + 1 + fromQueueIndex
+                    val playerToIndex = currentIndex + 1 + toQueueIndex
+
+                    val playlistSize = player?.mediaItemCount ?: 0
+
+                    // Safety Check: Ensure indices are valid
+                    if (playerFromIndex < playlistSize && playerToIndex < playlistSize) {
+                        Log.d(TAG, "Reordering Player: Moving $playerFromIndex to $playerToIndex")
+                        player?.moveMediaItem(playerFromIndex, playerToIndex)
+                    }
+                }
+                return START_STICKY
+            }
+            ACTION_REMOVE_FROM_QUEUE -> {
+                val queueIndex = intent.getIntExtra("EXTRA_QUEUE_INDEX", -1)
+
+                if (queueIndex != -1) {
+                    val currentIndex = player?.currentMediaItemIndex ?: 0
+
+                    // Logic: The Queue starts immediately after the current song.
+                    // Player Index = Current Index + 1 + Queue Index
+                    val indexToRemove = currentIndex + 1 + queueIndex
+
+                    val playlistSize = player?.mediaItemCount ?: 0
+
+                    // Safety Check: Ensure the index exists
+                    if (indexToRemove < playlistSize) {
+                        Log.d(TAG, "Removing from Player: Index $indexToRemove (Queue index: $queueIndex)")
+                        player?.removeMediaItem(indexToRemove)
+                    }
                 }
                 return START_STICKY
             }

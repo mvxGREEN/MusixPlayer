@@ -28,10 +28,12 @@ class QueueBottomSheetFragment : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 1. Initialize ItemTouchHelper FIRST so we can reference it in the Adapter
+        // 1. Initialize ItemTouchHelper
         val itemTouchCallback = object : ItemTouchHelper.SimpleCallback(
             ItemTouchHelper.UP or ItemTouchHelper.DOWN, // Drag directions
-            0 // We handle swipe-to-remove in the main list, usually not here, or keep RIGHT/LEFT if desired
+
+            // 👇 CHANGE THIS LINE (Was 0) 👇
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
         ) {
             override fun onMove(
                 recyclerView: RecyclerView,
@@ -40,17 +42,45 @@ class QueueBottomSheetFragment : BottomSheetDialogFragment() {
             ): Boolean {
                 val from = viewHolder.adapterPosition
                 val to = target.adapterPosition
-                // Update Repo
+
+                // 1. Update UI (Repo)
                 PlaylistRepository.swapQueueItems(from, to)
-                // Notify Adapter locally to prevent stutter
                 adapter.notifyItemMoved(from, to)
+
+                // 2. Update Player (Service)
+                val intent = android.content.Intent(requireContext(), MusicService::class.java).apply {
+                    action = "ACTION_REORDER_QUEUE"
+                    putExtra("EXTRA_FROM", from)
+                    putExtra("EXTRA_TO", to)
+                }
+
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    requireContext().startForegroundService(intent)
+                } else {
+                    requireContext().startService(intent)
+                }
                 return true
             }
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
-                PlaylistRepository.removeFromQueue(position)
-                // Note: The observer in onViewCreated will handle the list update
+
+                if (position != RecyclerView.NO_POSITION) {
+                    // 1. Update UI (Repo)
+                    PlaylistRepository.removeFromQueue(position)
+
+                    // 2. Update Player (Service)
+                    val intent = android.content.Intent(requireContext(), MusicService::class.java).apply {
+                        action = "ACTION_REMOVE_FROM_QUEUE"
+                        putExtra("EXTRA_QUEUE_INDEX", position)
+                    }
+
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        requireContext().startForegroundService(intent)
+                    } else {
+                        requireContext().startService(intent)
+                    }
+                }
             }
 
             // Allow long press to drag too? true = yes, false = handle only.
