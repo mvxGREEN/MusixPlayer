@@ -13,8 +13,8 @@ android {
         applicationId = "green.mobileapps.offlinemusicplayer"
         minSdk = 24
         targetSdk = 36
-        versionCode = 10
-        versionName = "1.2.2"
+        versionCode = 11
+        versionName = "1.3.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -68,7 +68,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 
     // media3 support
-    implementation("androidx.media:media:1.7.1")
+    implementation(libs.media)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.common)
     implementation(libs.androidx.media3.common.ktx)
@@ -77,8 +77,8 @@ dependencies {
     implementation(libs.library)
     implementation(libs.media3.ui)
 
-    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-crashlytics")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 
 }
