@@ -50,6 +50,7 @@ import androidx.activity.addCallback
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
+import com.google.android.play.core.review.ReviewManagerFactory
 import kotlinx.coroutines.isActive
 import me.zhanghai.android.fastscroll.FastScrollerBuilder
 import java.util.Collections
@@ -689,6 +690,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
     private lateinit var sortDirectionButton: ImageButton
     private lateinit var backButton: ImageButton
 
+    private val PREFS_NAME = "AppPrefs"
+    private val KEY_APP_OPEN_COUNT = "AppOpenCount"
+
     private val mediaPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         Manifest.permission.READ_MEDIA_AUDIO
     } else {
@@ -758,6 +762,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
         setupSwipeRefresh()
         setupObservers()
         checkPermissions()
+        checkAndShowInAppReview()
 
         binding.queueBarRoot.setOnClickListener {
             val bottomSheet = QueueBottomSheetFragment()
@@ -999,6 +1004,39 @@ class MainActivity : AppCompatActivity(), CoroutineScope, SearchView.OnQueryText
             }
         } else {
             requestStoragePermissionLauncher.launch(mediaPermission)
+        }
+    }
+
+    private fun checkAndShowInAppReview() {
+        val sharedPrefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val currentCount = sharedPrefs.getInt(KEY_APP_OPEN_COUNT, 0) + 1
+
+        // Save the new count immediately
+        sharedPrefs.edit().putInt(KEY_APP_OPEN_COUNT, currentCount).apply()
+
+        Log.d("MainActivity", "App Open Count: $currentCount")
+
+        // Trigger only on the 3rd open
+        if (currentCount == 3) {
+            val manager = ReviewManagerFactory.create(this)
+            val request = manager.requestReviewFlow()
+
+            request.addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    // We got the ReviewInfo object
+                    val reviewInfo = task.result
+                    val flow = manager.launchReviewFlow(this, reviewInfo)
+                    flow.addOnCompleteListener { _ ->
+                        // The flow has finished. The API does not indicate whether the user
+                        // reviewed or not, or even if the review dialog was shown.
+                        // Thus, no matter the result, we continue our app flow.
+                        Log.d("MainActivity", "In-App Review flow completed")
+                    }
+                } else {
+                    // There was some problem, log or handle the error code.
+                    Log.e("MainActivity", "Review info request failed", task.exception)
+                }
+            }
         }
     }
 
