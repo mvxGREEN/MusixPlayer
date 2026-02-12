@@ -258,6 +258,20 @@ class MusicActivity : AppCompatActivity() {
         }
     }
 
+    private fun updateShuffleButton(isShuffleOn: Boolean) {
+        // Find the shuffle button inside the PlayerView layout
+        // Note: The ID comes from ExoPlayer's standard IDs or your custom layout
+        val btnShuffle = playerView.findViewById<ImageButton>(androidx.media3.ui.R.id.exo_shuffle)
+            ?: playerView.findViewById<ImageButton>(androidx.media3.ui.R.id.exo_shuffle)
+            ?: return
+
+        // Set alpha to indicate state (Dim = Off, Bright = On)
+        btnShuffle.alpha = if (isShuffleOn) 1.0f else 0.3f
+
+        // Optionally force the icon if it changes
+        // btnShuffle.setImageResource(R.drawable.shuffle_24px)
+    }
+
     override fun onStart() {
         super.onStart()
         Log.d(TAG, "onStart: Creating MediaController")
@@ -277,6 +291,7 @@ class MusicActivity : AppCompatActivity() {
                 Log.d(TAG, "MediaController connected.")
 
                 updateRepeatButton(mediaController?.repeatMode ?: Player.REPEAT_MODE_OFF)
+                updateShuffleButton(mediaController?.shuffleModeEnabled ?: false)
 
                 if (pendingExternalUri != null) {
                     playExternalUri(pendingExternalUri!!)
