@@ -54,7 +54,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:background="@android:color/transparent"
-        app:controller_layout_id="@layout/custom_player_controls "
+        app:controller_layout_id="@layout/custom_player_controls"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -66,6 +66,8 @@
         app:default_artwork="@drawable/musi_note_432px"
         app:surface_type="none"
         app:use_controller="true"
+        app:play_icon="@drawable/ic_play_arrow_black"
+        app:pause_icon="@drawable/ic_pause_black"
         app:show_timeout="0" /> <!-- Set to 0 to keep controls visible indefinitely -->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

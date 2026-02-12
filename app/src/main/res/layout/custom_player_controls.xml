@@ -82,20 +82,29 @@
         <FrameLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:clipChildren="false"
+            android:clipToPadding="false">
 
-            <ImageButton
-                android:id="@id/exo_play_pause"
-                style="@style/ExoMediaButton.Play"
+            <View
                 android:layout_width="72dp"
                 android:layout_height="72dp"
                 android:layout_gravity="center"
                 android:background="@drawable/bg_circle_white"
-                android:contentDescription="Play"
+                android:elevation="6dp" />
+
+            <ImageButton
+                android:id="@id/exo_play_pause"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:layout_gravity="center"
+                android:background="@android:color/transparent"
+                android:elevation="6dp"
                 android:padding="16dp"
                 android:scaleType="fitCenter"
-                android:src="@drawable/play_arrow_24px"
-                app:tint="@color/black"/>
+                android:src="@drawable/ic_play_arrow_black"
+                app:tint="@null"
+                android:contentDescription="Play" />
         </FrameLayout>
 
         <ImageButton
