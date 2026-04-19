@@ -22,13 +22,15 @@ It provides a simple, focused audio playback experience for audio files on your 
 * **Build System:** Gradle (Kotlin DSL `build.gradle.kts`)
 * **Platform:** Android
 
-## 🚀 Getting Started
+## ⚡️ Quick Start:
 
-### Quick Start:
+Download latest APK from [Releases](https://github.com/mvxGREEN/Musix/releases) to an Android device.
 
-Download and install latest APK from [Releases](https://github.com/mvxGREEN/Musix/releases) to an Android device.  Done!
+Open APK file to install.
 
-### Start From Source Code:
+Done!  Soundloader should be ready to run.
+
+## 💻 Build From Source Code:
 
 To build and run this project locally, you will need [Android Studio](https://developer.android.com/studio) installed on your machine.
 
