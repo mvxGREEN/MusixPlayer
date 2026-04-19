@@ -5,7 +5,7 @@
 [![Language: Kotlin](https://img.shields.io/badge/Language-Kotlin-purple.svg)](https://kotlinlang.org/)
 [![Platform: Android](https://img.shields.io/badge/Platform-Android-3DDC84.svg)](https://developer.android.com/)
 
-**MusixPlayer** is an offline music player application built natively for Android. It provides a seamless local audio playback experience without the need for an internet connection.
+**MusixPlayer** is an offline audio player application built natively for Android. It provides a seamless local audio playback experience without the need for an internet connection.
 
 ## ✨ Features
 
