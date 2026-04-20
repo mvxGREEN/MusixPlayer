@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/launcher_musix_round.png" alt="Musix Round App Icon" width="200"/>
+  <img src="assets/launcher_musix_round.png" alt="Musix Round App Icon" width="180"/>
 </p>
 
 # Musix 🎵🎧
@@ -29,13 +29,13 @@ It provides a simple, focused audio playback experience for audio files stored l
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="assets/Screenshot 1.png" width="200"/>
+  <img src="assets/Screenshot 1.png" width="180"/>
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="assets/Screenshot 2.png" width="200"/>
+  <img src="assets/Screenshot 2.png" width="180"/>
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="assets/Screenshot 3.png" width="200"/>
+  <img src="assets/Screenshot 3.png" width="180"/>
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="assets/Screenshot 4.png" width="200"/>
+  <img src="assets/Screenshot 4.png" width="180"/>
 </p>
 
 ## ⚡️ Quick Start App
